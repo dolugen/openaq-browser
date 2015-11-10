@@ -1,0 +1,25 @@
+{
+  "name": "openaq_browser",
+  "authors": [
+    "Dolugen <dolugen@gmail.com>"
+  ],
+  "description": "",
+  "main": "index.html",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular-route": "~1.4.7",
+    "angular": "~1.4.7",
+    "bootstrap": "~3.3.5",
+    "jquery": "~2.1.4"
+  }
+}

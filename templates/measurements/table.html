@@ -1,0 +1,16 @@
+<table class="table table-striped table-bordered table-hover">
+  <th>location, city, country</th>
+  <th>parameter</th>
+  <th>value</th>
+  <th>unit</th>
+  <th>coordinates</th>
+  <th>date.utc</th>
+  <tr ng-repeat="result in results">
+    <td>{{ result.location }}, {{ result.city }}, {{ result.country }}</td>
+    <td>{{ result.parameter }}</td>
+    <td>{{ result.value }}</td>
+    <td>{{ result.unit }}</td>
+    <td>{{ result.coordinates }}</td>
+    <td>{{ result.date.utc | date }}</td>
+  </tr>
+</table>

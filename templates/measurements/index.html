@@ -1,0 +1,6 @@
+<div>
+  <measurements-form></measurements-form>
+  <p ng-show="busy">Fetching...</p>
+  <p ng-show="results">Found {{ found }} measurements. Showing {{ limit }}.</p>
+  <measurements-table ng-show="results"></measurements-table>
+</div>

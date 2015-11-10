@@ -1,0 +1,22 @@
+<table class="table table-striped table-bordered table-hover">
+  <th>sourceName</th>
+  <th>country</th>
+  <th>city</th>
+  <th>result</th>
+  <th>parameters</th>
+  <th>coordinates</th>
+  <th>count</th>
+  <th>firstUpdated</th>
+  <th>lastUpdated</th>
+  <tr ng-repeat="result in results">
+    <td>{{ result.sourceName }}</td>
+    <td>{{ result.country }}</td>
+    <td>{{ result.city }}</td>
+    <td>{{ result.result }}</td>
+    <td>{{ result.parameters}}</td>
+    <td>{{ result.coordinates}}</td>
+    <td>{{ result.count }}</td>
+    <td>{{ result.firstUpdated | date }}</td>
+    <td>{{ result.lastUpdated | date }}</td>
+  </tr>
+</table>
