@@ -32,6 +32,8 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav" ng-controller="NavCtrl">
+        <li ng-class="{ active: location.path() == '/cities' }" ng-click="isActive('/cities')"><a href="#/cities">Cities</a></li>
+        <li ng-class="{ active: location.path() == '/countries' }" ng-click="isActive('/countries')"><a href="#/countries">Countries</a></li>
         <li ng-class="{ active: location.path() == '/latest' }" ng-click="isActive('/latest')"><a href="#/latest">Latest</a></li>
         <li ng-class="{ active: location.path() == '/locations' }" ng-click="isActive('/locations')"><a href="#/locations">Locations</a></li>
         <li ng-class="{ active: location.path() == '/measurements' }"><a href="#/measurements">Measurements</a></li>
