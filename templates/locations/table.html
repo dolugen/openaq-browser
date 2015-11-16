@@ -2,7 +2,7 @@
   <th>sourceName</th>
   <th>country</th>
   <th>city</th>
-  <th>result</th>
+  <th>location</th>
   <th>parameters</th>
   <th>coordinates</th>
   <th>count</th>
@@ -12,9 +12,9 @@
     <td>{{ result.sourceName }}</td>
     <td>{{ result.country }}</td>
     <td>{{ result.city }}</td>
-    <td>{{ result.result }}</td>
-    <td>{{ result.parameters}}</td>
-    <td>{{ result.coordinates}}</td>
+    <td>{{ result.location }}</td>
+    <td><span ng-repeat="p in result.parameters">{{ p }}, </span></td>
+    <td>{{ result.coordinates.latitude }}, {{ result.coordinates.longitude }}</td>
     <td>{{ result.count }}</td>
     <td>{{ result.firstUpdated | date }}</td>
     <td>{{ result.lastUpdated | date }}</td>
