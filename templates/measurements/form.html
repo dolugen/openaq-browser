@@ -3,40 +3,68 @@
     <input ng-model="query_url" class="form-control" type="text" readonly />
   </div>
   <div class="form-group">
-    <select class="form-control" ng-model="country" ng-change="submit()">
-      <option value="">ANY</option>
-      <option value="AU">Australia</option>
-      <option value="BR">Brazil</option>
-      <option value="CL">Chile</option>
-      <option value="CN">China</option>
-      <option value="IN">India</option>
-      <option value="MN">Mongolia</option>
-      <option value="NL">Netherlands</option>
-      <option value="PL">Poland</option>
-      <option value="TH">Thailand</option>
-      <option value="GB">United Kingdom</option>
-      <option value="US">United States</option>
+    <select class="form-control" ng-model="country" ng-change="get_cities()">
+      <option value="">All countries</option>
+      <option ng-repeat="country in countries" value="{{ country.code }}">
+        {{ country.name }}
+      </option>
     </select>
   </div>
   <div class="form-group">
-    <select class="form-control" ng-model="parameter" ng-change="submit()">
-      <option value="">ANY</option>
-      <option value="pm25">pm25</option>
-      <option value="pm10">pm10</option>
-      <option value="so2">so2</option>
-      <option value="no2">no2</option>
-      <option value="o3">o3</option>
-      <option value="co">co</option>
-      <option value="bc">bc</option>
+    <select class="form-control" ng-model="city" ng-change="get_locations()">
+      <option value="">All cities</option>
+      <option ng-repeat="city in cities" value="{{ city.city }}">
+        {{ city.city }}
+      </option>
     </select>
   </div>
   <div class="form-group">
-    <input class="form-control" ng-model="limit" ng-change="submit()" value={{ limit }}>
+    <select class="form-control" ng-model="location">
+      <option value="">All locations</option>
+      <option ng-repeat="location in locations" value="{{ location.location }}">
+        {{ location.location }}
+      </option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <select class="form-control" ng-model="parameter">
+      <option value="">All parameters</option>
+      <option value="pm25">PM 2.5</option>
+      <option value="pm10">PM 10</option>
+      <option value="so2">SO₂</option>
+      <option value="no2">NO₂</option>
+      <option value="o3">O₃</option>
+      <option value="co">CO</option>
+      <option value="bc">BC</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <input class="form-control" ng-model="limit" value="{{ limit }}" placeholder="limit">
+  </div>
+  <div class="form-group">
+    <input class="form-control" ng-model="page" value="{{ page }}" placeholder="page">
+  </div>
+  <div class="form-group">
+    <input class="form-control"
+           ng-model="date_from"
+           value="{{ date_from }}"
+           placeholder="date_from (e.g. 2015-11-01)">
+  </div>
+  <div class="form-group">
+    <input class="form-control"
+           ng-model="date_to"
+           value="{{ date_to }}"
+           placeholder="date_to (e.g. 2015-11-15)">
   </div>
   <div class="form-group">
     <button type="submit" class="btn btn-primary" >
       <i class="glyphicon glyphicon-refresh"></i>
       Updoot
+    </button>
+    <button type="button" class="btn pull-right" ng-click="get_csv()">
+      <i class="glyphicon glyphicon-download"></i>
+      CSV
     </button>
   </div>
 </form>
