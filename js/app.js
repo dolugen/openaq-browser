@@ -25,7 +25,7 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
             });
     }])
     .controller('NavCtrl', ['$rootScope', '$location', '$log', function($rootScope, $location, $log){
-        $rootScope.location = $location;
+        $rootScope.urlLocation = $location;
     }])
     .factory('openaq_api_url', function() {
         var API_ROOT = "https://api.openaq.org/v1/";
