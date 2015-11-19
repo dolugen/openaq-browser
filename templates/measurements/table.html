@@ -4,13 +4,13 @@
   <th>value</th>
   <th>unit</th>
   <th>coordinates</th>
-  <th>date.utc</th>
+  <th>date.local</th>
   <tr ng-repeat="result in results">
     <td>{{ result.location }}, {{ result.city }}, {{ result.country }}</td>
     <td>{{ result.parameter }}</td>
     <td>{{ result.value }}</td>
     <td>{{ result.unit }}</td>
     <td>{{ result.coordinates.latitude }}, {{ result.coordinates.longitude}}</td>
-    <td>{{ result.date.utc | date }}</td>
+    <td>{{ result.date.local | date:"yyyy MMM d, H:mm:ss" }}</td>
   </tr>
 </table>

@@ -4,7 +4,8 @@
   </div>
   <div class="form-group">
     <select class="form-control" ng-model="country" ng-change="submit()">
-      <option ng-repeat="country in countries" value="{{ country.short_code }}">
+      <option value="">All countries</option>
+      <option ng-repeat="country in countries" value="{{ country.code }}">
         {{ country.name}}
       </option>
     </select>
