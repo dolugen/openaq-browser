@@ -124,6 +124,8 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         $scope.country = "MN";
         $scope.limit = 10;
         $scope.page = 1;
+        $scope.order_by = "date";
+        $scope.sort = "desc"
         
         $scope.busy = 0;
 
@@ -158,7 +160,10 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         var set_url = function() {
             $scope.query_url = $scope.base_url
                 + "?limit=" + $scope.limit
-                + "&page=" + $scope.page;
+                + "&page=" + $scope.page
+                + "&order_by=" + $scope.order_by
+                + "&sort=" + $scope.sort;
+            
             if($scope.country) {
                 $scope.query_url += "&country=" + $scope.country;
             }
