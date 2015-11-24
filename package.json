@@ -1,0 +1,29 @@
+{
+  "name": "openaq-browser",
+  "version": "0.1.0",
+  "description": "A Simple OpenAQ API Browser",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dolugen/openaq-browser.git"
+  },
+  "keywords": [
+    "openaq"
+  ],
+  "author": "Dolugen Buuralda <dolugen@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dolugen/openaq-browser/issues"
+  },
+  "homepage": "https://github.com/dolugen/openaq-browser",
+  "private": true,
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-bower-concat": "^0.6.0",
+    "grunt-contrib-copy": "^0.8.2",
+    "grunt-contrib-uglify": "^0.11.0"
+  }
+}
