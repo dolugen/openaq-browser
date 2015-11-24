@@ -53,17 +53,30 @@ module.exports = function(grunt) {
                     dest: 'dist'
                 }]
             }
+        },
+        'gh-pages': {
+            options: {
+                base: 'dist',
+                message: '[grunt] Update gh-pages.'
+            },
+            src: ['**']
         }
     });
 
     grunt.loadNpmTasks('grunt-bower-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-gh-pages');
 
-    grunt.registerTask('default', [
+    grunt.registerTask('build', [
         'copy',
         'bower_concat',
         'uglify:bower'
     ]);
+    grunt.registerTask('deploy', [
+        'build',
+        'gh-pages'
+    ]);
+    grunt.registerTask('default', ['build'])
 
 };
