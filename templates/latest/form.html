@@ -42,53 +42,10 @@
   </div>
 
   <div class="form-group">
-    <div class="col-sm-3">
-      <input class="form-control" ng-model="limit" value="{{ limit }}" placeholder="limit" ng-change="updateUrl('limit')">
-    </div>
-    <div class="col-sm-3">
-      <input class="form-control" ng-model="page" value="{{ page }}" placeholder="page" ng-change="updateUrl('page')">
-    </div>
-    <div class="col-sm-3">
-      <input class="form-control"
-             ng-model="date_from"
-             value="{{ date_from }}"
-             placeholder="date_from (e.g. 2015-11-01)"
-             ng-change="updateUrl('date_from')">
-    </div>
-    <div class="col-sm-3">
-      <input class="form-control"
-             ng-model="date_to"
-             value="{{ date_to }}"
-             placeholder="date_to (e.g. 2015-11-15)"
-             ng-change="updateUrl('date_to)">
-    </div>
-  </div>
-  <div class="form-group">
-    <div class="col-sm-6">
-      <select class="form-control" ng-model="order_by" ng-change="updateUrl('order_by')">
-        <option value="date">Date</option>
-        <option value="value">Value</option>
-        <option value="location">Location</option>
-        <option value="country">Country</option>
-        <option value="city">City</option>
-      </select>
-    </div>
-    <div class="col-sm-6">
-      <select class="form-control" ng-model="sort" ng-change="updateUrl('sort')">
-        <option value="desc">Descending order</option>
-        <option value="asc">Ascending order</option>
-      </select>
-    </div>
-  </div>
-  <div class="form-group">
     <div class="col-sm-12">
       <button type="submit" class="btn btn-primary" >
         <i class="glyphicon glyphicon-refresh"></i>
         Fetch
-      </button>
-      <button type="button" class="btn pull-right" ng-click="get_csv()">
-        <i class="glyphicon glyphicon-download"></i>
-        CSV
       </button>
     </div>
   </div>

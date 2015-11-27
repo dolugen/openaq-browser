@@ -1,0 +1,7 @@
+<div>
+  <latest-form></latest-form>
+  <p ng-show="busy">Fetching...</p>
+  <p ng-show="results">Got measurements of {{ found }} locations</p>
+  <latest-table ng-show="results"></latest-table>
+</div>
+
