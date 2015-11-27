@@ -21,6 +21,7 @@ module.exports = function(grunt) {
                         'dist/leaflet.js'
                     ],
                     'ui-leaflet': ['dist/ui-leaflet.min.js'],
+                    'urijs': ['src/URI.min.js'],
                 },
                 bowerOptions: {
                     relative: false

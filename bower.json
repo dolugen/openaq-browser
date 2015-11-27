@@ -21,6 +21,7 @@
     "angular": "~1.4.7",
     "bootstrap": "~3.3.5",
     "jquery": "~2.1.4",
-    "ui-leaflet": "~1.0.0"
+    "ui-leaflet": "~1.0.0",
+    "urijs": "~1.17.0"
   }
 }
