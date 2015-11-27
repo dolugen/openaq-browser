@@ -261,7 +261,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
             $http.get(uri.toString())
                 .success(function(data){
                     $scope.cities = data.results;
-                    $scope.get_locations()
             });
         };
 
@@ -270,7 +269,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
             $http.get(uri.toString())
                 .success(function(data){
                     $scope.countries = data.results;
-                    $scope.get_cities();
             });
         };
         $scope.get_countries();
