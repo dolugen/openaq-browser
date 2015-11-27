@@ -118,7 +118,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         return {
             'restrict': 'E',
             'templateUrl': 'templates/latest/table.html',
-            'controller': 'LatestCtrl'
        };
     }).
     directive('latestForm', function() {
@@ -202,7 +201,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         return {
             'restrict': 'E',
             'templateUrl': 'templates/locations/table.html',
-            'controller': 'LocationCtrl'
        };
     }).
     directive('locationsForm', function() {
@@ -219,13 +217,27 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         $scope.page = 1;
         $scope.order_by = "date";
         $scope.sort = "desc"
-        
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
             $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
         };
 
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page',
+                'order_by',
+                'sort'
+            ]
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+                $log.log(defaultFields[i]);
+            }
+        };
+        setDefaults();
+        
         $scope.get_locations = function() {
             var uri = URI(URLService.getOpenAQUrl('locations'));
             if($scope.country) {
@@ -249,7 +261,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
             $http.get(uri.toString())
                 .success(function(data){
                     $scope.cities = data.results;
-                    $scope.get_locations()
             });
         };
 
@@ -258,28 +269,12 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
             $http.get(uri.toString())
                 .success(function(data){
                     $scope.countries = data.results;
-                    $scope.get_cities();
             });
         };
         $scope.get_countries();
 
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page',
-                'order_by',
-                'sort'
-            ]
-
-            for (field in defaultFields) {
-                $scope.updateUrl(field)
-            }
-        };
-               
         $scope.fetch = function() {
             $scope.busy = 1;
-
-            setDefaults();
 
             $http.get($scope.query_url).success(function(data) {
                 $scope.results = data.results;
@@ -297,7 +292,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         $scope.get_csv = function() {
             $scope.busy = 1;
 
-            setDefaults();
             $scope.query_url += "&format=csv";
 
             $http.get($scope.query_url).success(function(data) {
@@ -321,7 +315,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         return {
             'restrict': 'E',
             'templateUrl': 'templates/measurements/table.html',
-            'controller': 'MeasurementCtrl'
        };
     }).
     directive('measurementsForm', function() {
@@ -367,7 +360,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         return {
             'restrict': 'E',
             'templateUrl': 'templates/cities/table.html',
-            'controller': 'CityCtrl'
        };
     }).
     directive('citiesForm', function() {
@@ -401,6 +393,5 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         return {
             'restrict': 'E',
             'templateUrl': 'templates/countries/table.html',
-            'controller': 'CountryCtrl'
        };
     });
