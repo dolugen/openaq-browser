@@ -20,6 +20,7 @@ module.exports = function(grunt) {
                         'dist/leaflet.css',
                         'dist/leaflet.js'
                     ],
+                    'lodash': ['lodash.min.js'],
                     'ui-leaflet': ['dist/ui-leaflet.min.js'],
                     'urijs': ['src/URI.min.js'],
                 },
@@ -64,7 +65,7 @@ module.exports = function(grunt) {
         },
         watch: {
             scripts: {
-                files: ['**/*.js'],
+                files: ['**/*.js', '**/*.html'],
                 tasks: ['build'],
                 options: {
                     spawn: false,
