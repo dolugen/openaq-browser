@@ -1,4 +1,4 @@
-angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
+angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
     .config(['$routeProvider', function($routeProvider) {
         $routeProvider.
             when('/', {
