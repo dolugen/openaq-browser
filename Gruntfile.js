@@ -61,13 +61,23 @@ module.exports = function(grunt) {
                 message: '[grunt] Update gh-pages.'
             },
             src: ['**']
-        }
+        },
+        watch: {
+            scripts: {
+                files: ['**/*.js'],
+                tasks: ['build'],
+                options: {
+                    spawn: false,
+                },
+            },
+        },
     });
 
     grunt.loadNpmTasks('grunt-bower-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('grunt-contrib-watch');
 
     grunt.registerTask('build', [
         'copy',
@@ -79,5 +89,9 @@ module.exports = function(grunt) {
         'gh-pages'
     ]);
     grunt.registerTask('default', ['build'])
+
+    grunt.event.on('watch', function(action, filepath, target) {
+        grunt.log.writeln(target + ': ' + filepath + ' has ' + action);
+    });
 
 };
