@@ -399,60 +399,104 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
        };
     }).
     controller('GraphCtrl', function($scope, $http, $log, URLService) {
-        var uri = URI(URLService.getOpenAQUrl('measurements'));
-        uri.addSearch('country', 'MN');
-        uri.addSearch('city', 'Ulaanbaatar');
-        uri.addSearch('location', 'Tolgoit');
-        uri.addSearch('parameter', 'pm25');
-        uri.addSearch('limit', 100);
-
-        var de_uri = URI(URLService.getOpenAQUrl('measurements'));
-        de_uri.addSearch('country', 'IN');
-        de_uri.addSearch('city', 'Delhi');
-        de_uri.addSearch('location', 'Punjabi Bagh');
-        de_uri.addSearch('parameter', 'pm25');
-        de_uri.addSearch('limit', 100);
-
-        var bj_uri = URI(URLService.getOpenAQUrl('measurements'));
-        bj_uri.addSearch('country', 'CN');
-        bj_uri.addSearch('city', 'Beijing');
-        bj_uri.addSearch('location', 'Beijing US Embassy');
-        bj_uri.addSearch('parameter', 'pm25');
-        bj_uri.addSearch('limit', 60);
+        var date = new Date();
+        date.setDate(date.getDate() - 1);
+        var yesterday = date.toISOString().slice(0, 10);
         
-        $http.get(uri.toString())
-            .success(function(data) {
-                $http.get(bj_uri.toString())
-                    .success(function(data2) {
-                        $http.get(de_uri.toString())
-                            .success(function(data3) {
-
-                                var chart = c3.generate({
-                                    data: {
-                                        xs: {
-                                            'data1': 'ub',
-                                            'data2': 'bj',
-                                            'data3': 'de',
-                                        },
-                                        columns: [
-                                            _(['ub']).concat(_.map(data.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['bj']).concat(_.map(data2.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['de']).concat(_.map(data3.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['data1']).concat(_.map(data.results, function(n) { return _.get(n, 'value') })).value(),
-                                            _(['data2']).concat(_.map(data2.results, function(n) { return _.get(n, 'value') })).value(),
-                                            _(['data3']).concat(_.map(data3.results, function(n) { return _.get(n, 'value') })).value(),
-                                        ]
-                                    },
-                                    axis: {
-                                        x: {
-                                            type: 'timeseries',
-                                            tick: {
-                                                format: '%Y-%m-%d %H:%M'
-                                            }
-                                        }
-                                    }
-                                });
-                            });
-                    });
+        var setUri = function(uri, params) {
+            _.keys(params).forEach(function(key) {
+                uri.addSearch(key, params[key]);
             });
+            $log.log(uri.toString());
+            return uri.toString()
+        };
+
+        var getAndDraw = function(locations, got) {
+            got = got || [];
+            var uri = URI(URLService.getOpenAQUrl('measurements'));
+
+            if(locations.length > 0) {
+                var location = locations.pop();
+                var api_url = setUri(uri, location);
+                $http.get(api_url)
+                    .success(function(data) {
+                        got.push({
+                            'data': data,
+                            'legend': location.location,
+                            'id': location.city
+                        });
+                        getAndDraw(locations, got);
+                    })
+            } else {
+                // draw
+                var c3data = {
+                    'xs': {},
+                    'columns': []
+                };
+                
+                got.forEach(function(item) {
+                    c3data.xs[item.legend] = item.id;
+                    c3data.columns.push(_([item.id]).concat(_.map(item.data.results, function(n) { return new Date(_.get(n, 'date.local')) })).value());
+                    c3data.columns.push(_([item.legend]).concat(_.map(item.data.results, function(n) { return _.get(n, 'value') })).value())
+                });
+                
+                var chart = c3.generate({
+                    size: {
+                        height: 500
+                    },
+                    legend: {
+                        position: 'right'
+                    },
+                    data: c3data,
+                    axis: {
+                        x: {
+                            type: 'timeseries',
+                            tick: {
+                                format: '%H:%M',
+                                count: 12,
+                            }
+                        },
+                        y: {
+                            label: {
+                                text: "PM 2.5 (µg/m³)",
+                                position: "outer-middle"
+                            }
+
+                        }
+                    },
+                    tooltip: {
+                        format: {
+                            title: function(d) { }
+                        }
+                    },
+                });
+                
+            }
+        };
+
+        var tolgoit = {
+            "country": "MN",
+            "city": "Ulaanbaatar",
+            "location": "Tolgoit",
+            "parameter": "pm25",
+            "date_from": yesterday
+        };
+
+        var punjabi = {
+            "country": "IN",
+            "city": "Delhi",
+            "location": "Punjabi Bagh",
+            "parameter": "pm25",
+            "date_from": yesterday
+        };
+
+        var beijing = {
+            "country": "CN",
+            "city": "Beijing",
+            "location": "Beijing US Embassy",
+            "parameter": "pm25",
+            "date_from": yesterday
+        };
+
+        getAndDraw([tolgoit, beijing, punjabi]); 
     });
