@@ -399,7 +399,6 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
        };
     }).
     controller('GraphCtrl', function($scope, $http, $log, URLService) {
-
         var _d = new Date(); 
         _d.setDate(_d.getDate() - 1);
         var yesterday = _d.toISOString().slice(0, 10)

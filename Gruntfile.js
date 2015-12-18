@@ -16,6 +16,10 @@ module.exports = function(grunt) {
                         'dist/css/bootstrap.min.css',
                         'dist/js/bootstrap.min.js'
                     ],
+                    'c3': [
+                        'c3.min.js',
+                        'c3.min.css'
+                    ],
                     'leaflet': [
                         'dist/leaflet.css',
                         'dist/leaflet.js'
@@ -65,7 +69,7 @@ module.exports = function(grunt) {
         },
         watch: {
             scripts: {
-                files: ['**/*.js', '**/*.html'],
+                files: ['src/**/*.js', 'src/**/*.html'],
                 tasks: ['build'],
                 options: {
                     spawn: false,
