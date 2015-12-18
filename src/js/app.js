@@ -404,21 +404,24 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         uri.addSearch('city', 'Ulaanbaatar');
         uri.addSearch('location', 'Tolgoit');
         uri.addSearch('parameter', 'pm25');
-        uri.addSearch('limit', 100);
+        uri.addSearch('date_from', '2015-12-11');
+        uri.addSearch('limit', 1000);
 
         var de_uri = URI(URLService.getOpenAQUrl('measurements'));
         de_uri.addSearch('country', 'IN');
         de_uri.addSearch('city', 'Delhi');
         de_uri.addSearch('location', 'Punjabi Bagh');
         de_uri.addSearch('parameter', 'pm25');
-        de_uri.addSearch('limit', 100);
+        de_uri.addSearch('date_from', '2015-12-11');
+        de_uri.addSearch('limit', 1000);
 
         var bj_uri = URI(URLService.getOpenAQUrl('measurements'));
         bj_uri.addSearch('country', 'CN');
         bj_uri.addSearch('city', 'Beijing');
         bj_uri.addSearch('location', 'Beijing US Embassy');
         bj_uri.addSearch('parameter', 'pm25');
-        bj_uri.addSearch('limit', 60);
+        bj_uri.addSearch('date_from', '2015-12-11');
+        bj_uri.addSearch('limit', 1000);
         
         $http.get(uri.toString())
             .success(function(data) {
@@ -428,27 +431,52 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
                             .success(function(data3) {
 
                                 var chart = c3.generate({
+                                    size: {
+                                        height: 600
+                                    },
                                     data: {
                                         xs: {
-                                            'data1': 'ub',
-                                            'data2': 'bj',
-                                            'data3': 'de',
+                                            'Ulaanbaatar': 'ub',
+                                            'Beijing': 'bj',
+                                            'Delhi': 'de',
                                         },
                                         columns: [
                                             _(['ub']).concat(_.map(data.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
                                             _(['bj']).concat(_.map(data2.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
                                             _(['de']).concat(_.map(data3.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['data1']).concat(_.map(data.results, function(n) { return _.get(n, 'value') })).value(),
-                                            _(['data2']).concat(_.map(data2.results, function(n) { return _.get(n, 'value') })).value(),
-                                            _(['data3']).concat(_.map(data3.results, function(n) { return _.get(n, 'value') })).value(),
+                                            _(['Ulaanbaatar']).concat(_.map(data.results, function(n) { return _.get(n, 'value') })).value(),
+                                            _(['Beijing']).concat(_.map(data2.results, function(n) { return _.get(n, 'value') })).value(),
+                                            _(['Delhi']).concat(_.map(data3.results, function(n) { return _.get(n, 'value') })).value(),
                                         ]
                                     },
                                     axis: {
                                         x: {
                                             type: 'timeseries',
+                                            label: 'Local Time',
                                             tick: {
-                                                format: '%Y-%m-%d %H:%M'
+                                                format: '%a %d', // %a %d %H:%M %p
+                                                count: 12
+                                            },
+                                            localtime: true
+                                        },
+                                        y: {
+                                            label: {
+                                                text: 'PM 2.5 (µg/m³)',
                                             }
+                                        }
+                                    },
+                                    legend: {
+                                        position: 'inset',
+                                        inset: {
+                                            anchor: 'top-right'
+                                        }
+                                    },
+                                    point: {
+                                        show: false
+                                    },
+                                    tooltip: {
+                                        format: {
+                                            title: function(x) { return x }
                                         }
                                     }
                                 });
