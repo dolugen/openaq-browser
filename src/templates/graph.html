@@ -1,0 +1,10 @@
+<form>
+<select ng-change="updateGraph();"
+        ng-model="date_from">
+  <option ng-repeat="df in date_from_filters"
+          value="{{ df.value }}">
+    {{ df.text}}
+  </option>
+</select>
+</form>
+<div id="chart"></div>

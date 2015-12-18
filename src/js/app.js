@@ -25,7 +25,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
                 controller: 'MeasurementCtrl'
             }).
             when('/graph', {
-                template: '<div id="chart"></div>',
+                templateUrl: 'templates/graph.html',
                 controller: 'GraphCtrl'
             }).
             otherwise({
@@ -399,88 +399,151 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
        };
     }).
     controller('GraphCtrl', function($scope, $http, $log, URLService) {
-        var uri = URI(URLService.getOpenAQUrl('measurements'));
-        uri.addSearch('country', 'MN');
-        uri.addSearch('city', 'Ulaanbaatar');
-        uri.addSearch('location', 'Tolgoit');
-        uri.addSearch('parameter', 'pm25');
-        uri.addSearch('date_from', '2015-12-11');
-        uri.addSearch('limit', 1000);
 
-        var de_uri = URI(URLService.getOpenAQUrl('measurements'));
-        de_uri.addSearch('country', 'IN');
-        de_uri.addSearch('city', 'Delhi');
-        de_uri.addSearch('location', 'Punjabi Bagh');
-        de_uri.addSearch('parameter', 'pm25');
-        de_uri.addSearch('date_from', '2015-12-11');
-        de_uri.addSearch('limit', 1000);
+        var _d = new Date(); 
+        _d.setDate(_d.getDate() - 1);
+        var yesterday = _d.toISOString().slice(0, 10)
+        var _d = new Date();
+        _d.setDate(_d.getDate() - 7);
+        week_ago = _d.toISOString().slice(0, 10);
 
-        var bj_uri = URI(URLService.getOpenAQUrl('measurements'));
-        bj_uri.addSearch('country', 'CN');
-        bj_uri.addSearch('city', 'Beijing');
-        bj_uri.addSearch('location', 'Beijing US Embassy');
-        bj_uri.addSearch('parameter', 'pm25');
-        bj_uri.addSearch('date_from', '2015-12-11');
-        bj_uri.addSearch('limit', 1000);
-        
-        $http.get(uri.toString())
-            .success(function(data) {
-                $http.get(bj_uri.toString())
-                    .success(function(data2) {
-                        $http.get(de_uri.toString())
-                            .success(function(data3) {
+        $scope.date_from_filters = [
+            {
+                'text': 'Past week',
+                'value': week_ago
+            },{
+                'text': 'Past day',
+                'value': yesterday
+            }
+        ];
+        $scope.date_from = week_ago;
 
-                                var chart = c3.generate({
-                                    size: {
-                                        height: 600
-                                    },
-                                    data: {
-                                        xs: {
-                                            'Ulaanbaatar': 'ub',
-                                            'Beijing': 'bj',
-                                            'Delhi': 'de',
-                                        },
-                                        columns: [
-                                            _(['ub']).concat(_.map(data.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['bj']).concat(_.map(data2.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['de']).concat(_.map(data3.results, function(n) { return new Date(_.get(n, 'date.local')) })).value(),
-                                            _(['Ulaanbaatar']).concat(_.map(data.results, function(n) { return _.get(n, 'value') })).value(),
-                                            _(['Beijing']).concat(_.map(data2.results, function(n) { return _.get(n, 'value') })).value(),
-                                            _(['Delhi']).concat(_.map(data3.results, function(n) { return _.get(n, 'value') })).value(),
-                                        ]
-                                    },
-                                    axis: {
-                                        x: {
-                                            type: 'timeseries',
-                                            label: 'Local Time',
-                                            tick: {
-                                                format: '%a %d', // %a %d %H:%M %p
-                                                count: 12
-                                            },
-                                            localtime: true
-                                        },
-                                        y: {
-                                            label: {
-                                                text: 'PM 2.5 (µg/m³)',
-                                            }
-                                        }
-                                    },
-                                    legend: {
-                                        position: 'inset',
-                                        inset: {
-                                            anchor: 'top-right'
-                                        }
-                                    },
-                                    point: {
-                                        show: false
-                                    },
-                                    tooltip: {
-                                        format: {
-                                            title: function(x) { return x }
-                                        }
-                                    }
-                                });
+        var initial_locations = [
+            {
+                'country': 'MN',
+                'city': 'Ulaanbaatar',
+                'location': 'Tolgoit'                
+            },
+            {
+                'country': 'IN',
+                'city': 'Delhi',
+                'location': 'Punjabi Bagh'                
+            },
+            {
+                'country': 'CN',
+                'city': 'Beijing',
+                'location': 'Beijing US Embassy'                
+            },
+        ];
+
+        var graph_defaults = {
+            parameter: 'pm25',
+            date_from: week_ago,
+            limit: 1000
+        };
+
+        var generateChart = function(data) {
+            $scope.chart = c3.generate({
+                    size: {
+                        height: 600
+                    },
+                    data: {
+                        xs: function() {
+                            var xs = {};
+                            data.forEach(function(d) {
+                                xs[d.name] = 'ID' + d.name;
                             });
+                            return xs;
+                        }(),
+                        columns: function() {
+                            var columns = [];
+                            data.forEach(function(d) {
+                                columns.push(_(['ID' + d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'date.local')) })).value());
+                                columns.push(_([d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'value')) })).value());
+                            });
+                            return columns;
+                        }(),
+                    },
+                    axis: {
+                        x: {
+                            type: 'timeseries',
+                            label: 'Local Time',
+                            tick: {
+                                format: '%a %d', // %a %d %H:%M %p (use different formats for day and week graphs)
+                                count: 12
+                            },
+                            localtime: true
+                        },
+                        y: {
+                            label: {
+                                text: 'PM 2.5 (µg/m³)',
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'inset',
+                        inset: {
+                            anchor: 'top-right'
+                        }
+                    },
+                    point: {
+                        show: false
+                    },
+                    tooltip: {
+                        format: {
+                            title: function(x) { return x }
+                        }
+                    }
+                }); // end of c3.generate
+        }
+
+        var updateGraph = function(data) {
+            $scope.chart.load({
+                columns: function() {
+                    var columns = [];
+                    data.forEach(function(d) {
+                        columns.push(_(['ID' + d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'date.local')) })).value());
+                        columns.push(_([d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'value')) })).value());
                     });
+                    return columns;
+                }()
             });
+        };
+
+        var getDataAndGraph = function(locations, data) {
+            if (locations.length > 0) {
+                var location = locations.pop();
+                var uri = URI(URLService.getOpenAQUrl('measurements'));
+                uri.addSearch('country', location.country);
+                uri.addSearch('city', location.city);
+                uri.addSearch('location', location.location);
+                uri.addSearch('parameter', graph_defaults.parameter);
+                uri.addSearch('date_from', graph_defaults.date_from);
+                uri.addSearch('limit', graph_defaults.limit);
+
+                $http.get(uri.toString())
+                    .success(function(response) {
+                        data.push({
+                            'id': location.country + '-' + location.location,
+                            'name': location.location + ', ' + location.city,
+                            'data': response.results
+                        });
+                        getDataAndGraph(locations, data);
+                    });
+            } else {
+                if(!$scope.chart) {
+                    generateChart(data);
+                } else {
+                    $scope.chart.unload();
+                    updateGraph(data);
+                }
+            };
+        };  // end of getDataAndDraw
+
+        $scope.updateGraph = function() {
+            graph_defaults.date_from = $scope.date_from;
+            getDataAndGraph(_.clone(initial_locations), new Array());
+        };
+
+        getDataAndGraph(_.clone(initial_locations), new Array());
     });
