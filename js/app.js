@@ -1,4 +1,4 @@
-angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
+angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 'ngRoute'])
     .config(['$routeProvider', function($routeProvider) {
         $routeProvider.
             when('/', {
@@ -24,6 +24,10 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
                 templateUrl: 'templates/measurements/index.html',
                 controller: 'MeasurementCtrl'
             }).
+            when('/graph', {
+                templateUrl: 'templates/graph.html',
+                controller: 'GraphCtrl'
+            }).
             otherwise({
                 redirectTo: '/measurements'
             });
@@ -32,7 +36,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         $rootScope.urlLocation = $location;
     }])
     .service('URLService', function() {
-
         this.getOpenAQUrl = function(name) {
             var API_ROOT = "https://api.openaq.org/v1/";
             var availablePoints = ['cities', 'countries', 'latest', 'locations', 'measurements'];
@@ -233,7 +236,6 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
 
             for (var i in defaultFields) {
                 $scope.updateUrl(defaultFields[i]);
-                $log.log(defaultFields[i]);
             }
         };
         setDefaults();
@@ -394,4 +396,180 @@ angular.module('OpenQAClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
             'restrict': 'E',
             'templateUrl': 'templates/countries/table.html',
        };
+    }).
+    controller('GraphCtrl', function($scope, $http, $log, URLService) {
+        var _d = new Date(); 
+        _d.setDate(_d.getDate() - 1);
+        var yesterday = _d.toISOString().slice(0, 10)
+        var _d = new Date();
+        _d.setDate(_d.getDate() - 7);
+        week_ago = _d.toISOString().slice(0, 10);
+
+        $scope.date_from_filters = [
+            {
+                'text': 'Past week',
+                'value': week_ago
+            },{
+                'text': 'Past day',
+                'value': yesterday
+            }
+        ];
+        $scope.date_from = week_ago;
+
+        var initial_locations = [
+            {
+                'country': 'MN',
+                'city': 'Ulaanbaatar',
+                'location': 'Tolgoit'                
+            },
+            {
+                'country': 'GB',
+                'city': 'London',
+                'location': 'Camden Kerbside'                
+            },
+            {
+                'country': 'CN',
+                'city': 'Beijing',
+                'location': 'Beijing US Embassy'                
+            },
+        ];
+        $scope.selectedLocations = initial_locations;
+
+        var graph_defaults = {
+            parameter: 'pm25',
+            date_from: week_ago,
+            limit: 1000
+        };
+
+        // get all locations for search
+        var uri = URI(URLService.getOpenAQUrl('locations'));
+        uri.addSearch('parameter', graph_defaults.parameter);
+        $http.get(uri.toString())
+            .success(function(response) {
+                $scope.locationsList = _.map(response.results, function(result) {
+                    // for autocomplete description only
+                    result.city_country = result.city + ', ' + result.country;
+                    return result;
+                });
+            });
+        
+        $scope.selectedObject = function(location) {
+            $scope.selectedLocations.push(location.originalObject);
+        };
+
+        var generateChart = function(data) {
+            $scope.chart = c3.generate({
+                    size: {
+                        height: 600
+                    },
+                    data: {
+                        xs: function() {
+                            var xs = {};
+                            data.forEach(function(d) {
+                                xs[d.name] = 'ID' + d.name;
+                            });
+                            return xs;
+                        }(),
+                        columns: function() {
+                            var columns = [];
+                            data.forEach(function(d) {
+                                columns.push(_(['ID' + d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'date.local')) })).value());
+                                columns.push(_([d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'value')) })).value());
+                            });
+                            return columns;
+                        }(),
+                    },
+                    axis: {
+                        x: {
+                            type: 'timeseries',
+                            label: 'Local Time',
+                            tick: {
+                                format: '%a %d', // %a %d %H:%M %p (use different formats for day and week graphs)
+                                count: 12
+                            },
+                            localtime: true
+                        },
+                        y: {
+                            label: {
+                                text: 'PM 2.5 (µg/m³)',
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'inset',
+                        inset: {
+                            anchor: 'top-right'
+                        }
+                    },
+                    point: {
+                        show: false
+                    },
+                    tooltip: {
+                        format: {
+                            title: function(x) { return x }
+                        }
+                    }
+                }); // end of c3.generate
+        }
+
+        var updateGraph = function(data) {
+            $scope.chart.load({
+                xs: function() {
+                    var xs = {};
+                    data.forEach(function(d) {
+                        xs[d.name] = 'ID' + d.name;
+                    });
+                    return xs;
+                }(),
+                columns: function() {
+                    var columns = [];
+                    data.forEach(function(d) {
+                        columns.push(_(['ID' + d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'date.local')) })).value());
+                        columns.push(_([d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'value')) })).value());
+                    });
+                    return columns;
+                }()
+            });
+        };
+
+        var getDataAndGraph = function(locations, data) {
+            if (locations.length > 0) {
+                var location = locations.pop();
+                var uri = URI(URLService.getOpenAQUrl('measurements'));
+                uri.addSearch('country', location.country);
+                uri.addSearch('city', location.city);
+                uri.addSearch('location', location.location);
+                uri.addSearch('parameter', graph_defaults.parameter);
+                uri.addSearch('date_from', graph_defaults.date_from);
+                uri.addSearch('limit', graph_defaults.limit);
+
+                $http.get(uri.toString())
+                    .success(function(response) {
+                        data.push({
+                            'id': location.country + '-' + location.location,
+                            'name': location.location + ', ' + location.city,
+                            'data': response.results
+                        });
+                        getDataAndGraph(locations, data);
+                    });
+            } else {
+                generateChart(data);
+            };
+        };  // end of getDataAndDraw
+
+        $scope.updateGraph = function() {
+            // just redraw everything until
+            // you figure out how to update properly
+            if($scope.chart) {
+                $scope.chart = $scope.chart.destroy();
+            };
+            //graph_defaults.date_from = $scope.date_from;
+            getDataAndGraph(_.clone($scope.selectedLocations), new Array());
+        };
+
+        $scope.removeLocation = function(location) {
+            $scope.selectedLocations = _.pull($scope.selectedLocations, location);
+        };
+
+        getDataAndGraph(_.clone(initial_locations), new Array());
     });
