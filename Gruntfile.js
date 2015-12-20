@@ -11,6 +11,10 @@ module.exports = function(grunt) {
                     'angular': ['angular.min.js'],
                     'angular-route': ['angular-route.min.js'],
                     'angular-simple-logger': ['dist/angular-simple-logger.min.js'],
+                    'angucomplete-alt': [
+                        'dist/angucomplete-alt.min.js',
+                        'angucomplete-alt.css',
+                    ],
                     'bootstrap': [
                         'dist/fonts/*',
                         'dist/css/bootstrap.min.css',
@@ -73,6 +77,7 @@ module.exports = function(grunt) {
                 tasks: ['build'],
                 options: {
                     spawn: false,
+                    interval: 1000
                 },
             },
         },

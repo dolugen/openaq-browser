@@ -1,4 +1,4 @@
-angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
+angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 'ngRoute'])
     .config(['$routeProvider', function($routeProvider) {
         $routeProvider.
             when('/', {
@@ -36,7 +36,6 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
         $rootScope.urlLocation = $location;
     }])
     .service('URLService', function() {
-
         this.getOpenAQUrl = function(name) {
             var API_ROOT = "https://api.openaq.org/v1/";
             var availablePoints = ['cities', 'countries', 'latest', 'locations', 'measurements'];
@@ -434,11 +433,28 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
                 'location': 'Beijing US Embassy'                
             },
         ];
+        $scope.selectedLocations = initial_locations;
 
         var graph_defaults = {
             parameter: 'pm25',
             date_from: week_ago,
             limit: 1000
+        };
+
+        // get all locations for search
+        var uri = URI(URLService.getOpenAQUrl('locations'));
+        uri.addSearch('parameter', graph_defaults.parameter);
+        $http.get(uri.toString())
+            .success(function(response) {
+                $scope.locationsList = _.map(response.results, function(result) {
+                    // for autocomplete description only
+                    result.city_country = result.city + ', ' + result.country;
+                    return result;
+                });
+            });
+        
+        $scope.selectedObject = function(location) {
+            $scope.selectedLocations.push(location.originalObject);
         };
 
         var generateChart = function(data) {
@@ -498,6 +514,13 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
 
         var updateGraph = function(data) {
             $scope.chart.load({
+                xs: function() {
+                    var xs = {};
+                    data.forEach(function(d) {
+                        xs[d.name] = 'ID' + d.name;
+                    });
+                    return xs;
+                }(),
                 columns: function() {
                     var columns = [];
                     data.forEach(function(d) {
@@ -530,18 +553,22 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
                         getDataAndGraph(locations, data);
                     });
             } else {
-                if(!$scope.chart) {
-                    generateChart(data);
-                } else {
-                    $scope.chart.unload();
-                    updateGraph(data);
-                }
+                generateChart(data);
             };
         };  // end of getDataAndDraw
 
         $scope.updateGraph = function() {
-            graph_defaults.date_from = $scope.date_from;
-            getDataAndGraph(_.clone(initial_locations), new Array());
+            // just redraw everything until
+            // you figure out how to update properly
+            if($scope.chart) {
+                $scope.chart = $scope.chart.destroy();
+            };
+            //graph_defaults.date_from = $scope.date_from;
+            getDataAndGraph(_.clone($scope.selectedLocations), new Array());
+        };
+
+        $scope.removeLocation = function(location) {
+            $scope.selectedLocations = _.pull($scope.selectedLocations, location);
         };
 
         getDataAndGraph(_.clone(initial_locations), new Array());
