@@ -423,9 +423,9 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                 'location': 'Tolgoit'                
             },
             {
-                'country': 'IN',
-                'city': 'Delhi',
-                'location': 'Punjabi Bagh'                
+                'country': 'GB',
+                'city': 'London',
+                'location': 'Camden Kerbside'                
             },
             {
                 'country': 'CN',
