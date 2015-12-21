@@ -533,6 +533,12 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
             });
         };
 
+        var removeInvalid = function(results) {
+            return _.remove(results, function(r) {
+                return r.value == -999
+            });
+        };
+
         var getDataAndGraph = function(locations, data) {
             if (locations.length > 0) {
                 var location = locations.pop();
@@ -546,6 +552,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
 
                 $http.get(uri.toString())
                     .success(function(response) {
+                        removeInvalid(response.results);
                         data.push({
                             'id': location.country + '-' + location.location,
                             'name': location.location + ', ' + location.city,
