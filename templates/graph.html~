@@ -1,0 +1,8 @@
+<form>
+<select ng-repeat="date_from in date_from_filters">
+  <option value="{{ date_from.value }}">
+    {{ date_from.text}}
+  </option>
+</select>
+</form>
+<div id="chart"></div>

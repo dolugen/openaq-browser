@@ -440,6 +440,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
             date_from: week_ago,
             limit: 1000
         };
+        $scope.parameter = graph_defaults.parameter;
 
         // get all locations for search
         var uri = URI(URLService.getOpenAQUrl('locations'));

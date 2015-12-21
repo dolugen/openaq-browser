@@ -1,4 +1,4 @@
-angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 'ngRoute'])
+angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'ngRoute'])
     .config(['$routeProvider', function($routeProvider) {
         $routeProvider.
             when('/', {
@@ -27,10 +27,6 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
             when('/graph', {
                 templateUrl: 'templates/graph.html',
                 controller: 'GraphCtrl'
-            }).
-            when('/search', {
-                templateUrl: 'templates/search.html',
-                controller: 'SearchCtrl'
             }).
             otherwise({
                 redirectTo: '/measurements'
@@ -403,6 +399,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
        };
     }).
     controller('GraphCtrl', function($scope, $http, $log, URLService) {
+
         var _d = new Date(); 
         _d.setDate(_d.getDate() - 1);
         var yesterday = _d.toISOString().slice(0, 10)
@@ -412,11 +409,11 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
 
         $scope.date_from_filters = [
             {
-                'text': 'Past week',
-                'value': week_ago
-            },{
                 'text': 'Past day',
                 'value': yesterday
+            },{
+                'text': 'Past week',
+                'value': week_ago
             }
         ];
         $scope.date_from = week_ago;
@@ -444,9 +441,28 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
             date_from: week_ago,
             limit: 1000
         };
+        var getDataAndGraph = function(locations, data) {
+            if (locations.length > 0) {
+                var location = locations.pop();
+                var uri = URI(URLService.getOpenAQUrl('measurements'));
+                uri.addSearch('country', location.country);
+                uri.addSearch('city', location.city);
+                uri.addSearch('location', location.location);
+                uri.addSearch('parameter', graph_defaults.parameter);
+                uri.addSearch('date_from', graph_defaults.date_from);
+                uri.addSearch('limit', graph_defaults.limit);
 
-        var generateChart = function(data) {
-            $scope.chart = c3.generate({
+                $http.get(uri.toString())
+                    .success(function(response) {
+                        data.push({
+                            'id': location.country + '-' + location.location,
+                            'name': location.location + ', ' + location.city,
+                            'data': response.results
+                        });
+                        getDataAndGraph(locations, data);
+                    });
+            } else {
+                var chart = c3.generate({
                     size: {
                         height: 600
                     },
@@ -498,87 +514,18 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                         }
                     }
                 }); // end of c3.generate
-        }
 
-        var updateGraph = function(data) {
-            $scope.chart.load({
-                columns: function() {
-                    var columns = [];
-                    data.forEach(function(d) {
-                        columns.push(_(['ID' + d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'date.local')) })).value());
-                        columns.push(_([d.name]).concat(_.map(d.data, function(n) { return new Date(_.get(n, 'value')) })).value());
-                    });
-                    return columns;
-                }()
-            });
-        };
-
-        var getDataAndGraph = function(locations, data) {
-            if (locations.length > 0) {
-                var location = locations.pop();
-                var uri = URI(URLService.getOpenAQUrl('measurements'));
-                uri.addSearch('country', location.country);
-                uri.addSearch('city', location.city);
-                uri.addSearch('location', location.location);
-                uri.addSearch('parameter', graph_defaults.parameter);
-                uri.addSearch('date_from', graph_defaults.date_from);
-                uri.addSearch('limit', graph_defaults.limit);
-
-                $http.get(uri.toString())
-                    .success(function(response) {
-                        data.push({
-                            'id': location.country + '-' + location.location,
-                            'name': location.location + ', ' + location.city,
-                            'data': response.results
-                        });
-                        getDataAndGraph(locations, data);
-                    });
-            } else {
-                if(!$scope.chart) {
-                    generateChart(data);
-                } else {
-                    $scope.chart.unload();
-                    updateGraph(data);
-                }
+                _(data).forEach(function(d) {
+                    chart.data.xs[d.name] = d.data;
+                    chart.data.columns.push(_([d.name]).concat(_.map(d.data.results, function(n) { return new Date(_.get(n, 'date.local')) })).value());
+                });
             };
         };  // end of getDataAndDraw
 
-        $scope.updateGraph = function() {
+        var updateGraph = function() {
             graph_defaults.date_from = $scope.date_from;
-            getDataAndGraph(_.clone(initial_locations), new Array());
+            getAndGraph(initial_locations, new Array());
         };
 
-        getDataAndGraph(_.clone(initial_locations), new Array());
-    }).
-    controller('SearchCtrl', function($scope, $http, $log, URLService) {
-        $scope.countries = [
-            {
-                'location': 'Tolgoit',
-                'city_country': 'Ulaanbaatar, Mongolia'
-            },
-            {
-                'location': 'Berlin University',
-                'city_country': 'Berlin, Germany'
-            },
-            {
-                'location': 'Ankara College',
-                'city_country': 'Ankara, Turkey'
-            },
-            {
-                'location': 'US Embassy',
-                'city_country': 'Moscow, Russia'
-            },
-            {
-                'location': 'Shinjuku',
-                'city_country': 'Tokyo, Japan'
-            },
-            {
-                'location': 'Central Square',
-                'city_country': 'Hanoi, Vietnam'
-            }
-        ];
-
-        $scope.selectedCountry = function(location) {
-            $log.log(location);
-        }
+        getDataAndGraph(initial_locations, new Array());
     });
