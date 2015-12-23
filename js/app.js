@@ -32,6 +32,9 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                 redirectTo: '/measurements'
             });
     }])
+    .config(['$compileProvider', function($compileProvider) {
+        $compileProvider.debugInfoEnabled(false);
+    }])
     .controller('NavCtrl', ['$rootScope', '$location', function($rootScope, $location){
         $rootScope.urlLocation = $location;
     }])
