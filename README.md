@@ -5,11 +5,7 @@ A web client for [OpenAQ API](https://github.com/openaq/openaq-api/).
 ## Local setup
 
 ```
-npm install
-bower install
-grunt build
-cd dist
-python -m SimpleHTTPServer
+npm start
 ```
 
-That should get it up at `http://localhost:8000/`.
+It will install everything needed and start the server at `http://localhost:8000/`.
