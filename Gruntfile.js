@@ -2,49 +2,42 @@ module.exports = function(grunt) {
     
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
-        bower_concat: {
-            all: {
-                dest: 'dist/js/bower.js',
-                cssDest: 'dist/css/bower.css',
-                mainFiles: {
-                    'jQuery': ['dist/jquery.min.js'],
-                    'angular': ['angular.min.js'],
-                    'angular-route': ['angular-route.min.js'],
-                    'angular-simple-logger': ['dist/angular-simple-logger.min.js'],
-                    'angucomplete-alt': [
-                        'dist/angucomplete-alt.min.js',
-                        'angucomplete-alt.css',
-                    ],
-                    'bootstrap': [
-                        'dist/fonts/*',
-                        'dist/css/bootstrap.min.css',
-                        'dist/js/bootstrap.min.js'
-                    ],
-                    'c3': [
-                        'c3.min.js',
-                        'c3.min.css'
-                    ],
-                    'leaflet': [
-                        'dist/leaflet.css',
-                        'dist/leaflet.js'
-                    ],
-                    'lodash': ['lodash.min.js'],
-                    'ui-leaflet': ['dist/ui-leaflet.min.js'],
-                    'urijs': ['src/URI.min.js'],
-                },
-                bowerOptions: {
-                    relative: false
-                }
+        concat: {
+            js: {
+                src: [
+                    'node_modules/jquery/dist/jquery.min.js',
+                    'node_modules/angular/angular.min.js',
+                    'node_modules/angular-route/angular-route.min.js',
+                    'node_modules/angular-simple-logger/dist/angular-simple-logger.min.js',
+                    'node_modules/angucomplete-alt/dist/angucomplete-alt.min.js',
+                    'node_modules/bootstrap/dist/js/bootstrap.min.js',
+                    'node_modules/c3/c3.min.js',
+                    'node_modules/c3/node_modules/d3/d3.min.js',
+                    'node_modules/ui-leaflet/node_modules/leaflet/dist/leaflet.js',
+                    'node_modules/lodash/index.js',
+                    'node_modules/ui-leaflet/dist/ui-leaflet.min.js',
+                    'node_modules/urijs/src/URI.min.js'
+                ],
+                dest: 'dist/js/script.js'
+            },
+            css: {
+                src: [
+                    'node_modules/angucomplete-alt/angucomplete-alt.css',
+                    'node_modules/bootstrap/dist/css/bootstrap.min.css',
+                    'node_modules/c3/c3.min.css',
+                    'node_modules/ui-leaflet/node_modules/leaflet/dist/leaflet.css'
+                ],
+                dest: 'dist/css/style.css'
             }
         },
         uglify: {
-            bower: {
+            all: {
                 options: {
                     mangle: true,
                     compress: true
                 },
                 files: {
-                    'dist/js/bower.min.js': 'dist/js/bower.js'
+                    'dist/js/script.min.js': 'dist/js/script.js'
                 }
             }
         },
@@ -53,7 +46,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true,
                     dot: true,
-                    cwd: 'bower_components/bootstrap/dist',
+                    cwd: 'node_modules/bootstrap/dist',
                     src: ['fonts/*.*'],
                     dest: 'dist'
                 },{
@@ -83,7 +76,7 @@ module.exports = function(grunt) {
         },
     });
 
-    grunt.loadNpmTasks('grunt-bower-concat');
+    grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-gh-pages');
@@ -91,8 +84,9 @@ module.exports = function(grunt) {
 
     grunt.registerTask('build', [
         'copy',
-        'bower_concat',
-        'uglify:bower'
+        'concat:js',
+        'concat:css',
+        'uglify'
     ]);
     grunt.registerTask('deploy', [
         'build',

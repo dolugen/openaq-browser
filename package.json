@@ -4,11 +4,11 @@
   "description": "A Simple OpenAQ API Browser",
   "main": "index.html",
   "scripts": {
-      "start": "http-server -a 0.0.0.0 -p 8000 ./dist",
-      "test": "node node_modules/karma/bin/karma start test/karma.conf.js --single-run",
-      "prestart": "npm install",
-      "pretest": "npm install",
-      "postinstall": "bower install && grunt build"
+    "start": "http-server -a 0.0.0.0 -p 8000 ./dist",
+    "test": "node node_modules/karma/bin/karma start test/karma.conf.js --single-run",
+    "prestart": "npm install",
+    "pretest": "npm install",
+    "postinstall": "grunt build"
   },
   "repository": {
     "type": "git",
@@ -24,6 +24,18 @@
   },
   "homepage": "https://github.com/dolugen/openaq-browser",
   "private": true,
+  "dependencies": {
+    "angucomplete-alt": "~2.1.0",
+    "angular": "~1.4.7",
+    "angular-route": "~1.4.7",
+    "angular-simple-logger": "^0.1.5",
+    "bootstrap": "~3.3.5",
+    "c3": "~0.4.10",
+    "jquery": "~2.1.4",
+    "lodash": "~3.10.1",
+    "ui-leaflet": "~1.0.0",
+    "urijs": "~1.17.0"
+  },
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-bower-concat": "^0.6.0",
@@ -37,6 +49,7 @@
     "karma": "^0.13.15",
     "karma-jasmine": "^0.3.6",
     "karma-phantomjs-launcher": "^0.2.1",
-    "phantomjs": "^1.9.19"
+    "phantomjs": "^1.9.19",
+    "angular-mocks": "~1.4.8"
   }
 }
