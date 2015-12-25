@@ -544,6 +544,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         };
 
         var getDataAndGraph = function(locations, data) {
+            data = data || [];
             if (locations.length > 0) {
                 var location = locations.pop();
                 var uri = URI(URLService.getOpenAQUrl('measurements'));
@@ -576,12 +577,12 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                 $scope.chart = $scope.chart.destroy();
             };
             //graph_defaults.date_from = $scope.date_from;
-            getDataAndGraph(_.clone($scope.selectedLocations), new Array());
+            getDataAndGraph(_.clone($scope.selectedLocations));
         };
 
         $scope.removeLocation = function(location) {
             $scope.selectedLocations = _.pull($scope.selectedLocations, location);
         };
 
-        getDataAndGraph(_.clone(initial_locations), new Array());
+        getDataAndGraph(_.clone(initial_locations));
     });
