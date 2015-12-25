@@ -578,8 +578,9 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         };
 
         var getDataAndGraph = function(locations, data) {
-            $scope.status = "Fetching data..."
             data = data || [];
+            var _progress = (data.length+1) + "/" + (locations.length+data.length);
+            $scope.status = "Fetching location data..." + _progress;
             if (locations.length > 0) {
                 var location = locations.pop();
                 var uri = URI(URLService.getOpenAQUrl('measurements'));
