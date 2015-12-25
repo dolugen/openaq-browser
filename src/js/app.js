@@ -437,7 +437,22 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                 'location': 'Beijing US Embassy'                
             },
         ];
-        $scope.selectedLocations = initial_locations;
+
+        var openaqLocalStorage = "OpenAQ.graph.locations";
+        var saveLocations = function() {
+            if(typeof(Storage) !== "undefined") {
+                localStorage.setItem(openaqLocalStorage, JSON.stringify($scope.selectedLocations));
+            }
+        }
+        var getLocations = function() {
+            if(typeof(Storage) !== "undefined") {
+                return JSON.parse(localStorage.getItem(openaqLocalStorage));
+            } else {
+                return initial_locations;
+            }
+        }
+        
+        $scope.selectedLocations = getLocations();
 
         var graph_defaults = {
             parameter: 'pm25',
@@ -460,9 +475,16 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         
         $scope.selectedObject = function(location) {
             $scope.selectedLocations.push(location.originalObject);
+            saveLocations();
+        };
+
+        $scope.removeLocation = function(location) {
+            $scope.selectedLocations = _.pull($scope.selectedLocations, location);
+            saveLocations();
         };
 
         var generateChart = function(data) {
+            $scope.status = "Loading graph..."
             $scope.chart = c3.generate({
                     size: {
                         height: 600
@@ -515,6 +537,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                         }
                     }
                 }); // end of c3.generate
+            $scope.status = '';
         }
 
         var updateGraph = function(data) {
@@ -544,6 +567,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         };
 
         var getDataAndGraph = function(locations, data) {
+            $scope.status = "Fetching data..."
             data = data || [];
             if (locations.length > 0) {
                 var location = locations.pop();
@@ -580,9 +604,5 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
             getDataAndGraph(_.clone($scope.selectedLocations));
         };
 
-        $scope.removeLocation = function(location) {
-            $scope.selectedLocations = _.pull($scope.selectedLocations, location);
-        };
-
-        getDataAndGraph(_.clone(initial_locations));
+        getDataAndGraph(_.clone($scope.selectedLocations));
     });

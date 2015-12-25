@@ -1,6 +1,7 @@
 <div class="page-header">
   <h1>PM 2.5 Measurements from Past Week in Select Locations</h1>
 </div>
+<div ng-show="status">{{ status }}</div>
 <div id="chart"></div>
 <form ng-submit="updateGraph()">
   <!-- <div class="form-group">
@@ -28,7 +29,7 @@
     <th>location</th>
     <th>city, country</th>
     <th></th>
-    <tr ng-repeat="location in selectedLocations">
+    <tr ng-repeat="location in selectedLocations track by $index">
       <td>{{ location.location }}</td>
       <td>{{ location.city }}, {{ location.country }}</td>
       <td>
