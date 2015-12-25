@@ -29,7 +29,7 @@
     <th>location</th>
     <th>city, country</th>
     <th></th>
-    <tr ng-repeat="location in selectedLocations track by $index">
+    <tr ng-repeat="location in selectedLocations track by location.location">
       <td>{{ location.location }}</td>
       <td>{{ location.city }}, {{ location.country }}</td>
       <td>
@@ -40,7 +40,10 @@
     </tr>
   </table>
   <button type="submit" class="btn btn-primary">
-    Reload graph
+    Reload Graph
+  </button>
+  <button type="button" ng-click="resetLocations()" class="btn pull-right">
+    Reset Locations
   </button>
 </form>
 

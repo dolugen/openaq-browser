@@ -438,21 +438,20 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
             },
         ];
 
-        var openaqLocalStorage = "OpenAQ.graph.locations";
-        var saveLocations = function() {
+        var _selectedLocations = "OpenAQ.graph.selectedLocations";
+        var _locationsList = "OpenAQ.graph.locationsList";
+        var saveToStorage = function(key, value) {
             if(typeof(Storage) !== "undefined") {
-                localStorage.setItem(openaqLocalStorage, JSON.stringify($scope.selectedLocations));
+                localStorage.setItem(key, JSON.stringify(value));
             }
         }
-        var getLocations = function() {
+        var getFromStorage = function(key) {
             if(typeof(Storage) !== "undefined") {
-                return JSON.parse(localStorage.getItem(openaqLocalStorage));
-            } else {
-                return initial_locations;
+                return JSON.parse(localStorage.getItem(key));
             }
         }
         
-        $scope.selectedLocations = getLocations();
+        $scope.selectedLocations = getFromStorage(_selectedLocations) || _.clone(initial_locations);
 
         var graph_defaults = {
             parameter: 'pm25',
@@ -462,26 +461,38 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         $scope.parameter = graph_defaults.parameter;
 
         // get all locations for search
-        var uri = URI(URLService.getOpenAQUrl('locations'));
-        uri.addSearch('parameter', graph_defaults.parameter);
-        $http.get(uri.toString())
-            .success(function(response) {
-                $scope.locationsList = _.map(response.results, function(result) {
-                    // for autocomplete description only
-                    result.city_country = result.city + ', ' + result.country;
-                    return result;
+        var fetchLocations = function() {
+            var uri = URI(URLService.getOpenAQUrl('locations'));
+            uri.addSearch('parameter', graph_defaults.parameter);
+            $http.get(uri.toString())
+                .success(function(response) {
+                    $scope.locationsList = _.map(response.results, function(result) {
+                        // for autocomplete description only
+                        result.city_country = result.city + ', ' + result.country;
+                        return result;
+                    });
+                    saveToStorage(_locationsList, $scope.locationsList)
                 });
-            });
+        };
+        $scope.locationsList = getFromStorage(_locationsList) || fetchLocations();
         
         $scope.selectedObject = function(location) {
-            $scope.selectedLocations.push(location.originalObject);
-            saveLocations();
+            if($scope.selectedLocations.indexOf(location.originalObject) < 0) {
+                $scope.selectedLocations.push(location.originalObject);
+                saveToStorage(_selectedLocations, $scope.selectedLocations);
+            }
         };
 
         $scope.removeLocation = function(location) {
             $scope.selectedLocations = _.pull($scope.selectedLocations, location);
-            saveLocations();
+            saveToStorage(_selectedLocations, $scope.selectedLocations);
         };
+
+        $scope.resetLocations = function() {
+            $scope.selectedLocations = _.clone(initial_locations);
+            localStorage.removeItem(_locationsList);
+            localStorage.removeItem(_selectedLocations);
+        }
 
         var generateChart = function(data) {
             $scope.status = "Loading graph..."
