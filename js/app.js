@@ -40,9 +40,10 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
     }])
     .service('URLService', function() {
         this.getOpenAQUrl = function(name) {
+            if (name == undefined) { throw new Error('API endpoint required.') };
             var API_ROOT = "https://api.openaq.org/v1/";
             var availablePoints = ['cities', 'countries', 'latest', 'locations', 'measurements'];
-            if (availablePoints.indexOf(name) < 0) { throw 'API endpoint unavailable.'; };
+            if (availablePoints.indexOf(name) < 0) { throw new Error('API endpoint unavailable.'); };
             return API_ROOT + name;
         };
 
@@ -436,7 +437,21 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                 'location': 'Beijing US Embassy'                
             },
         ];
-        $scope.selectedLocations = initial_locations;
+
+        var _selectedLocations = "OpenAQ.graph.selectedLocations";
+        var _locationsList = "OpenAQ.graph.locationsList";
+        var saveToStorage = function(key, value) {
+            if(typeof(Storage) !== "undefined") {
+                localStorage.setItem(key, JSON.stringify(value));
+            }
+        }
+        var getFromStorage = function(key) {
+            if(typeof(Storage) !== "undefined") {
+                return JSON.parse(localStorage.getItem(key));
+            }
+        }
+        
+        $scope.selectedLocations = getFromStorage(_selectedLocations) || _.clone(initial_locations);
 
         var graph_defaults = {
             parameter: 'pm25',
@@ -446,22 +461,41 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         $scope.parameter = graph_defaults.parameter;
 
         // get all locations for search
-        var uri = URI(URLService.getOpenAQUrl('locations'));
-        uri.addSearch('parameter', graph_defaults.parameter);
-        $http.get(uri.toString())
-            .success(function(response) {
-                $scope.locationsList = _.map(response.results, function(result) {
-                    // for autocomplete description only
-                    result.city_country = result.city + ', ' + result.country;
-                    return result;
+        var fetchLocations = function() {
+            var uri = URI(URLService.getOpenAQUrl('locations'));
+            uri.addSearch('parameter', graph_defaults.parameter);
+            $http.get(uri.toString())
+                .success(function(response) {
+                    $scope.locationsList = _.map(response.results, function(result) {
+                        // for autocomplete description only
+                        result.city_country = result.city + ', ' + result.country;
+                        return result;
+                    });
+                    saveToStorage(_locationsList, $scope.locationsList)
                 });
-            });
+        };
+        $scope.locationsList = getFromStorage(_locationsList) || fetchLocations();
         
         $scope.selectedObject = function(location) {
-            $scope.selectedLocations.push(location.originalObject);
+            if($scope.selectedLocations.indexOf(location.originalObject) < 0) {
+                $scope.selectedLocations.push(location.originalObject);
+                saveToStorage(_selectedLocations, $scope.selectedLocations);
+            }
         };
 
+        $scope.removeLocation = function(location) {
+            $scope.selectedLocations = _.pull($scope.selectedLocations, location);
+            saveToStorage(_selectedLocations, $scope.selectedLocations);
+        };
+
+        $scope.resetLocations = function() {
+            $scope.selectedLocations = _.clone(initial_locations);
+            localStorage.removeItem(_locationsList);
+            localStorage.removeItem(_selectedLocations);
+        }
+
         var generateChart = function(data) {
+            $scope.status = "Loading graph..."
             $scope.chart = c3.generate({
                     size: {
                         height: 600
@@ -514,6 +548,7 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                         }
                     }
                 }); // end of c3.generate
+            $scope.status = '';
         }
 
         var updateGraph = function(data) {
@@ -543,6 +578,8 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
         };
 
         var getDataAndGraph = function(locations, data) {
+            $scope.status = "Fetching data..."
+            data = data || [];
             if (locations.length > 0) {
                 var location = locations.pop();
                 var uri = URI(URLService.getOpenAQUrl('measurements'));
@@ -575,12 +612,8 @@ angular.module('OpenAQClient', ['nemLogging', 'ui-leaflet', 'angucomplete-alt', 
                 $scope.chart = $scope.chart.destroy();
             };
             //graph_defaults.date_from = $scope.date_from;
-            getDataAndGraph(_.clone($scope.selectedLocations), new Array());
+            getDataAndGraph(_.clone($scope.selectedLocations));
         };
 
-        $scope.removeLocation = function(location) {
-            $scope.selectedLocations = _.pull($scope.selectedLocations, location);
-        };
-
-        getDataAndGraph(_.clone(initial_locations), new Array());
+        getDataAndGraph(_.clone($scope.selectedLocations));
     });
