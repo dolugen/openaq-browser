@@ -43,18 +43,28 @@ module.exports = function(grunt) {
         },
         copy: {
             dist: {
-                files: [{
-                    expand: true,
-                    dot: true,
-                    cwd: 'node_modules/bootstrap/dist',
-                    src: ['fonts/*.*'],
-                    dest: 'dist'
-                },{
-                    expand: true,
-                    cwd: 'src',
-                    src: ['**'],
-                    dest: 'dist'
-                }]
+                files: [
+                    {
+                        expand: true,
+                        dot: true,
+                        cwd: 'node_modules/bootstrap/dist',
+                        src: ['fonts/*.*'],
+                        dest: 'dist'
+                    },
+                    {
+                        expand: true,
+                        dot: true,
+                        cwd: 'node_modules/bootstrap/dist/',
+                        src: ['css/bootstrap.min.css.map'],
+                        dest: 'dist'
+                    },
+                    {
+                        expand: true,
+                        cwd: 'src',
+                        src: ['**'],
+                        dest: 'dist'
+                    }
+                ]
             }
         },
         'gh-pages': {
