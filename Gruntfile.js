@@ -31,7 +31,37 @@ module.exports = function(grunt) {
             },
             js: {
                 src: [
-                    'src/app/**/**.js'
+                    "src/app/app.module.js",
+                    "src/app/core/core.module.js",
+                    "src/app/core/config.js",
+                    "src/app/core/constants.js",
+                    "src/app/core/exception.js",
+                    "src/app/core/core.directives.js",
+                    "src/app/core/url.service.js",
+                    "src/app/core/data.service.js",
+                    "src/app/core/date.factory.js",
+                    "src/app/core/nav.js",
+                    "src/app/core/404.route.js",
+                    "src/app/core/about.route.js",
+                    "src/app/endpoints/endpoints.module.js",
+                    "src/app/endpoints/endpoints.route.js",
+                    "src/app/endpoints/cities.js",
+                    "src/app/endpoints/cities-table.directive.js",
+                    "src/app/endpoints/cities-form.directive.js",
+                    "src/app/endpoints/countries.js",
+                    "src/app/endpoints/countries.directive.js",
+                    "src/app/endpoints/latest.js",
+                    "src/app/endpoints/latest-table.directive.js",
+                    "src/app/endpoints/latest-form.directive.js",
+                    "src/app/endpoints/locations.js",
+                    "src/app/endpoints/locations-table.directive.js",
+                    "src/app/endpoints/locations-form.directive.js",
+                    "src/app/endpoints/measurements.js",
+                    "src/app/endpoints/measurements-form.directive.js",
+                    "src/app/endpoints/measurements-table.directive.js",
+                    "src/app/graph/graph.module.js",
+                    "src/app/graph/graph.route.js",
+                    "src/app/graph/graph.js",
                 ],
                 dest: 'dist/app.js'
             }
@@ -124,6 +154,7 @@ module.exports = function(grunt) {
         'concat:node',
         'concat:js',
         'concat:css',
+        'processhtml',
     ]);
     grunt.registerTask('deploy', [
         'build',
