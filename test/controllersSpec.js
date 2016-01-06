@@ -1,11 +1,13 @@
-describe("OpenAQClient Controllers", function() {
-    beforeEach(module("OpenAQClient"));
+describe("Endpoint Controllers", function() {
+    beforeEach(function() { 
+        module("app")
+    });
 
     var $httpBackend, $rootScope, createController, getRequestHandler;
     var countriesUrl = "https://api.openaq.org/v1/countries";
     var countriesResponse = { results: [ "Amsterdam", "Andacollo", "Antofagasta" ] };
 
-    describe("CountryCtrl", function() {
+    describe("CountriesController", function() {
         
         beforeEach(inject(function($injector) {
             $httpBackend = $injector.get("$httpBackend");
@@ -19,22 +21,21 @@ describe("OpenAQClient Controllers", function() {
             };
         }));
 
-
         afterEach(function() {
             $httpBackend.verifyNoOutstandingExpectation();
             $httpBackend.verifyNoOutstandingRequest();
         });
 
         it("should have the correct target address", function() {
-            var controller = createController("CountryCtrl");
+            var controller = createController("CountriesController");
             expect($rootScope.query_url).toEqual(countriesUrl);
             $httpBackend.flush();
         });
 
         describe("$scope.fetch", function() {
             it("should get results", function() {
-                var controller = createController("CountryCtrl");
-                $rootScope.fetch()
+                var controller = createController("CountriesController");
+                $rootScope.submit();
                 $httpBackend.flush();
                 expect($rootScope.found).toEqual(countriesResponse.results.length);
                 expect($rootScope.results).toEqual(countriesResponse.results);
