@@ -5,7 +5,7 @@
         .module('app.graph')
         .controller('GraphController', GraphController);
 
-    function GraphController($scope, $http, $log, URLService, dateFactory) {
+    function GraphController($scope, $http, $log, URLService, dateFactory, storageService) {
         var weekAgo = dateFactory.weekAgo();
 
         $scope.date_from_filters = [
@@ -39,17 +39,8 @@
 
         var _selectedLocations = "OpenAQ.graph.selectedLocations";
         var _locationsList = "OpenAQ.graph.locationsList";
-        var saveToStorage = function(key, value) {
-            if(typeof(Storage) !== "undefined") {
-                localStorage.setItem(key, JSON.stringify(value));
-            }
-        };
-        var getFromStorage = function(key) {
-            if(typeof(Storage) !== "undefined") {
-                return JSON.parse(localStorage.getItem(key));
-            }
-        };
-        $scope.selectedLocations = getFromStorage(_selectedLocations) || _.clone(initial_locations);
+
+        $scope.selectedLocations = storageService.get(_selectedLocations) || _.clone(initial_locations);
 
         var graph_defaults = {
             parameter: 'pm25',
@@ -69,27 +60,27 @@
                         result.city_country = result.city + ', ' + result.country;
                         return result;
                     });
-                    saveToStorage(_locationsList, $scope.locationsList);
+                    storageService.set(_locationsList, $scope.locationsList);
                 });
         };
-        $scope.locationsList = getFromStorage(_locationsList) || fetchLocations();
+        $scope.locationsList = storageService.get(_locationsList) || fetchLocations();
         
         $scope.selectedObject = function(location) {
             if($scope.selectedLocations.indexOf(location.originalObject) < 0) {
                 $scope.selectedLocations.push(location.originalObject);
-                saveToStorage(_selectedLocations, $scope.selectedLocations);
+                storageService.set(_selectedLocations, $scope.selectedLocations);
             }
         };
 
         $scope.removeLocation = function(location) {
             $scope.selectedLocations = _.pull($scope.selectedLocations, location);
-            saveToStorage(_selectedLocations, $scope.selectedLocations);
+            storageService.set(_selectedLocations, $scope.selectedLocations);
         };
 
         $scope.resetLocations = function() {
             $scope.selectedLocations = _.clone(initial_locations);
-            localStorage.removeItem(_locationsList);
-            localStorage.removeItem(_selectedLocations);
+            storageService.remove(_locationsList);
+            storageService.remove(_selectedLocations);
         };
 
         var generateChart = function(data) {

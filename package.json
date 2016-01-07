@@ -7,6 +7,7 @@
     "start": "http-server -a 0.0.0.0 -p 8000 ./dist",
     "test": "node node_modules/karma/bin/karma start test/karma.conf.js --single-run",
     "prestart": "npm install",
+    "pretest": "grunt build",
     "postinstall": "grunt build"
   },
   "repository": {

@@ -39,6 +39,7 @@ module.exports = function(grunt) {
                     "src/app/core/core.directives.js",
                     "src/app/core/url.service.js",
                     "src/app/core/data.service.js",
+                    "src/app/core/storage.service.js",
                     "src/app/core/date.factory.js",
                     "src/app/core/nav.js",
                     "src/app/core/404.route.js",
