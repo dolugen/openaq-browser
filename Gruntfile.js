@@ -27,7 +27,7 @@ module.exports = function(grunt) {
                     'node_modules/c3/c3.min.css',
                     'node_modules/ui-leaflet/node_modules/leaflet/dist/leaflet.css'
                 ],
-                dest: 'dist/style.css'
+                dest: 'dist/css/style.css'
             },
             js: {
                 src: [
