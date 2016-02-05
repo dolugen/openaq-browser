@@ -3,7 +3,7 @@ module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         concat: {
-            js: {
+            node: {
                 src: [
                     'node_modules/jquery/dist/jquery.min.js',
                     'node_modules/angular/angular.min.js',
@@ -18,7 +18,7 @@ module.exports = function(grunt) {
                     'node_modules/ui-leaflet/dist/ui-leaflet.min.js',
                     'node_modules/urijs/src/URI.min.js'
                 ],
-                dest: 'dist/js/script.js'
+                dest: 'dist/deps.js'
             },
             css: {
                 src: [
@@ -27,18 +27,44 @@ module.exports = function(grunt) {
                     'node_modules/c3/c3.min.css',
                     'node_modules/ui-leaflet/node_modules/leaflet/dist/leaflet.css'
                 ],
-                dest: 'dist/css/style.css'
-            }
-        },
-        uglify: {
-            all: {
-                options: {
-                    mangle: true,
-                    compress: true
-                },
-                files: {
-                    'dist/js/script.min.js': 'dist/js/script.js'
-                }
+                dest: 'dist/style.css'
+            },
+            js: {
+                src: [
+                    "src/app/app.module.js",
+                    "src/app/core/core.module.js",
+                    "src/app/core/config.js",
+                    "src/app/core/constants.js",
+                    "src/app/core/exception.js",
+                    "src/app/core/core.directives.js",
+                    "src/app/core/url.service.js",
+                    "src/app/core/data.service.js",
+                    "src/app/core/storage.service.js",
+                    "src/app/core/date.factory.js",
+                    "src/app/core/nav.js",
+                    "src/app/core/404.route.js",
+                    "src/app/core/about.route.js",
+                    "src/app/endpoints/endpoints.module.js",
+                    "src/app/endpoints/endpoints.route.js",
+                    "src/app/endpoints/cities.js",
+                    "src/app/endpoints/cities-table.directive.js",
+                    "src/app/endpoints/cities-form.directive.js",
+                    "src/app/endpoints/countries.js",
+                    "src/app/endpoints/countries.directive.js",
+                    "src/app/endpoints/latest.js",
+                    "src/app/endpoints/latest-table.directive.js",
+                    "src/app/endpoints/latest-form.directive.js",
+                    "src/app/endpoints/locations.js",
+                    "src/app/endpoints/locations-table.directive.js",
+                    "src/app/endpoints/locations-form.directive.js",
+                    "src/app/endpoints/measurements.js",
+                    "src/app/endpoints/measurements-form.directive.js",
+                    "src/app/endpoints/measurements-table.directive.js",
+                    "src/app/graph/graph.module.js",
+                    "src/app/graph/graph.route.js",
+                    "src/app/graph/graph.js",
+                ],
+                dest: 'dist/app.js'
             }
         },
         copy: {
@@ -74,6 +100,35 @@ module.exports = function(grunt) {
             },
             src: ['**']
         },
+        jshint: {
+            all: [
+                'Gruntfile.js',
+                'src/app/**/*.js'
+            ]
+        },
+        processhtml: {
+            options: {
+                data: {
+                    message: 'Hello world!'
+                }
+            },
+            dist: {
+                files: {
+                    'dist/index.html': ['src/index.html']
+                }
+            }
+        },
+        uglify: {
+            all: {
+                options: {
+                    mangle: true,
+                    compress: true
+                },
+                files: {
+                    'dist/deps.min.js': 'dist/deps.js'
+                }
+            }
+        },
         watch: {
             scripts: {
                 files: ['src/**/*.js', 'src/**/*.html'],
@@ -87,22 +142,26 @@ module.exports = function(grunt) {
     });
 
     grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-copy');
-    grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('grunt-processhtml');
 
     grunt.registerTask('build', [
+        'jshint',
         'copy',
+        'concat:node',
         'concat:js',
         'concat:css',
-        'uglify'
+        'processhtml',
     ]);
     grunt.registerTask('deploy', [
         'build',
         'gh-pages'
     ]);
-    grunt.registerTask('default', ['build'])
+    grunt.registerTask('default', ['build']);
 
     grunt.event.on('watch', function(action, filepath, target) {
         grunt.log.writeln(target + ': ' + filepath + ' has ' + action);
