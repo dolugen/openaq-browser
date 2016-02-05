@@ -85,26 +85,5 @@
             $scope.fetch();
         };
 
-        $scope.get_csv = function() {
-            $scope.busy = 1;
-
-            $scope.query_url += "&format=csv";
-
-            $http.get($scope.query_url).success(function(data) {
-                // http://stackoverflow.com/a/31871521
-                var anchor = angular.element('<a/>');
-                anchor.css({display: 'none'}); // Make sure it's not visible
-                angular.element(document.body).append(anchor); // Attach to document
-
-                anchor.attr({
-                    href: 'data:attachment/csv;charset=utf-8,' + encodeURI(data),
-                    target: '_blank',
-                    download: 'filename.csv'
-                })[0].click();
-
-                anchor.remove(); // Clean it up afterwards
-                $scope.busy = 0;
-            });
-        };
     }
 })();
