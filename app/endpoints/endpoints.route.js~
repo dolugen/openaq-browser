@@ -1,0 +1,30 @@
+(function() {
+    angular
+        .module('app.endpoints')
+        .config(config);
+
+    function config($routeProvider) {
+        $routeProvider
+            .when('/cities', {
+                templateUrl: 'cities.html',
+                controller: 'CitiesController'
+            })
+            .when('/countries', {
+                templateUrl: 'countries.html',
+                controller: 'CountriesController'
+            })
+            .when('/latest', {
+                templateUrl: 'latest.html',
+                controller: 'LatestController'
+            })
+            .when('/locations', {
+                templateUrl: 'locations.html',
+                controller: 'LocationsController'
+            })
+            .when('/measurements', {
+                templateUrl: 'measurements.html',
+                controller: 'MeasurementsController'
+            });
+    };
+
+})();

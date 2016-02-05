@@ -1,0 +1,41 @@
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .controller('CitiesController', CitiesController);
+
+    function CitiesController($http, $scope, URLService) {
+        var uri = URI(URLService.getOpenAQUrl('cities'));
+        $scope.query_url = uri.toString();
+        $scope.busy = 0;
+
+        $scope.updateUrl = function(model) {
+            $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
+        };
+
+        $scope.get_countries = function() {
+            var uri = URI(URLService.getOpenAQUrl('countries'));
+            $http.get(uri.toString()).success(function(data){
+                $scope.countries = data.results;
+            });
+        };
+        $scope.get_countries();
+
+        $scope.fetch = function() {
+            $scope.busy = 1;
+
+            $http.get($scope.query_url).success(function(data) {
+                $scope.results = data.results;
+                $scope.found = data.results.length;
+                $scope.busy = 0;
+            });
+        };
+
+        $scope.submit = function() {
+            $scope.fetch()
+        };
+        
+    };
+
+})();

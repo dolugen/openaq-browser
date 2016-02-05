@@ -1,0 +1,42 @@
+(function() {
+    'use strict'
+
+    angular
+        .module('app.core')
+        .service('dataService', dataService);
+
+    function dataService($q, $htt) {
+        var apiRoot = constants.API_HOST;
+
+        var service = {
+            locations: locations,
+            latest: latest,
+            measurements: measurements,
+            cities: cities,
+            countries: countries
+        };
+
+        return service;
+
+        function locations() {
+            
+        };
+
+        functions latest() {
+            
+        };
+
+        functions measurements() {
+            
+        };
+
+        function cities() {
+            
+        };
+
+        function countries() {
+            
+        };
+    };
+
+})();

@@ -1,0 +1,12 @@
+(function() {
+    'use strict';
+
+    angular
+        .module('app.graph')
+        .controller('GraphController', GraphController);
+
+    function GraphController($scope, $http, $log, URLService) {
+        
+    }
+
+})();

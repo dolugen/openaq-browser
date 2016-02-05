@@ -1,0 +1,14 @@
+describe("storageService", function() {
+    var storageService;
+
+    beforeEach(function() {
+        module("app.core");
+        inject(function(_storageService_) {
+            storageService = _storageService_;
+        });
+    });
+
+    it("should provide a get function", function() {
+        expect(angular.isFunction(storageService.get)).toBe(true);
+    });
+})
