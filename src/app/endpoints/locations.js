@@ -25,8 +25,8 @@
 
         $scope.get_countries = function() {
             return dataService.countries()
-                .then(function(countries) {
-                    $scope.countries = countries;
+                .then(function(data) {
+                    $scope.countries = data.results;
                 });
         };
         $scope.get_countries();
@@ -38,11 +38,11 @@
             var markerc = $scope.countries.filter(getCountry)[0];
 
             return dataService.locations(params)
-                .then(function(locations) {
-                    $scope.results = locations;
-                    locations.forEach(getMarkers);
+                .then(function(data) {
+                    $scope.results = data.results;
+                    $scope.results.forEach(getMarkers);
 
-                    $scope.found = locations.length;
+                    $scope.found = $scope.results.length;
                     $scope.busy = 0;
 
                     if($scope.found === 0) {
