@@ -13,7 +13,7 @@ module.exports = function(grunt) {
                     'node_modules/bootstrap/dist/js/bootstrap.min.js',
                     'node_modules/c3/c3.min.js',
                     'node_modules/c3/node_modules/d3/d3.min.js',
-                    'node_modules/ui-leaflet/node_modules/leaflet/dist/leaflet.js',
+                    'node_modules/leaflet/dist/leaflet.js',
                     'node_modules/lodash/index.js',
                     'node_modules/ui-leaflet/dist/ui-leaflet.min.js',
                     'node_modules/urijs/src/URI.min.js'
@@ -25,7 +25,7 @@ module.exports = function(grunt) {
                     'node_modules/angucomplete-alt/angucomplete-alt.css',
                     'node_modules/bootstrap/dist/css/bootstrap.min.css',
                     'node_modules/c3/c3.min.css',
-                    'node_modules/ui-leaflet/node_modules/leaflet/dist/leaflet.css'
+                    'node_modules/leaflet/dist/leaflet.css'
                 ],
                 dest: 'dist/css/style.css'
             },
