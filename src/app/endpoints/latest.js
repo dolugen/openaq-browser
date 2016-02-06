@@ -41,7 +41,7 @@
         $scope.get_countries = function() {
             return dataService.countries()
                 .then(function(data) {
-                    params.city = null;
+                    delete params.city;
                     $scope.countries = data.results;
                 });
         };
