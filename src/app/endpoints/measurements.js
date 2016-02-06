@@ -17,7 +17,11 @@
 
         $scope.updateUrl = function(model) {
             $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
-            params[model] = $scope[model];
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
         };
 
         var setDefaults = function(uri) {
@@ -72,7 +76,7 @@
         $scope.fetch = function() {
             $scope.busy = 1;
 
-            return dataService.measurements()
+            return dataService.measurements(params)
                 .then(function(data) {
                     $scope.results = data.results;
                     $scope.found = data.meta.found;
