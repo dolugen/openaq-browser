@@ -17,7 +17,11 @@
 
         $scope.updateUrl = function(model) {
             $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
-            params[model] = $scope[model];
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
         };
 
         var setDefaults = function(uri) {
@@ -72,7 +76,7 @@
         $scope.fetch = function() {
             $scope.busy = 1;
 
-            return dataService.measurements()
+            return dataService.measurements(params)
                 .then(function(data) {
                     $scope.results = data.results;
                     $scope.found = data.meta.found;
@@ -85,26 +89,5 @@
             $scope.fetch();
         };
 
-        $scope.get_csv = function() {
-            $scope.busy = 1;
-
-            $scope.query_url += "&format=csv";
-
-            $http.get($scope.query_url).success(function(data) {
-                // http://stackoverflow.com/a/31871521
-                var anchor = angular.element('<a/>');
-                anchor.css({display: 'none'}); // Make sure it's not visible
-                angular.element(document.body).append(anchor); // Attach to document
-
-                anchor.attr({
-                    href: 'data:attachment/csv;charset=utf-8,' + encodeURI(data),
-                    target: '_blank',
-                    download: 'filename.csv'
-                })[0].click();
-
-                anchor.remove(); // Clean it up afterwards
-                $scope.busy = 0;
-            });
-        };
     }
 })();

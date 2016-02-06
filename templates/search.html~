@@ -1,0 +1,16 @@
+<angucomplete-alt id="ex1"
+                  placeholder="Search locations for graph"
+                  pause="100"
+                  selected-object="selectedObject"
+                  local-data="locationsList"
+                  search-fields="location,city_country"
+                  title-field="location"
+                  description-field="city_country"
+                  minlength="1"
+                  input-class="form-control form-control-small"
+                  match-class="mark"
+                  clear-selected="true">
+</angucomplete-alt>
+<ul>
+  <li ng-repeat="location in selectedLocations">{{ location.location }}, {{ location.city_country }}</li>
+</ul>
