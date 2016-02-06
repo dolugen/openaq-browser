@@ -1,3 +1,7 @@
+<div class="page-header">
+  <h1>PM 2.5 Measurements from Past Week in Select Locations</h1>
+</div>
+<div ng-show="status">{{ status }}</div>
 <div id="chart"></div>
 <form ng-submit="updateGraph()">
   <!-- <div class="form-group">
@@ -9,7 +13,7 @@
     </select>
   </div> -->
   <angucomplete-alt id="ex1"
-                    placeholder="Search locations for graph"
+                    placeholder="Search from {{ locationsList.length }} locations with {{ parameter }} measurements"
                     pause="100"
                     selected-object="selectedObject"
                     local-data="locationsList"
@@ -25,7 +29,7 @@
     <th>location</th>
     <th>city, country</th>
     <th></th>
-    <tr ng-repeat="location in selectedLocations">
+    <tr ng-repeat="location in selectedLocations track by location.location">
       <td>{{ location.location }}</td>
       <td>{{ location.city }}, {{ location.country }}</td>
       <td>
@@ -36,7 +40,10 @@
     </tr>
   </table>
   <button type="submit" class="btn btn-primary">
-    Reload graph
+    Reload Graph
+  </button>
+  <button type="button" ng-click="resetLocations()" class="btn pull-right">
+    Reset Locations
   </button>
 </form>
 
