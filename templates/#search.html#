@@ -1,9 +1,0 @@
-<angucomplete-alt id="ex1"
-              placeholder="Search countries"
-              pause="100"
-              selected-object="selectedCountry"
-              local-data="countries"
-              search-fields="name"
-              title-field="name"
-              minlength="1"
-              input-class="form-control form-control-small"/>
