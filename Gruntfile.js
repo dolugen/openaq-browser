@@ -46,6 +46,7 @@ module.exports = function(grunt) {
                     "src/app/core/nav.js",
                     "src/app/core/404.route.js",
                     "src/app/core/about.route.js",
+                    "src/app/core/about.js",
                     "src/app/endpoints/endpoints.module.js",
                     "src/app/endpoints/endpoints.route.js",
                     "src/app/endpoints/cities.js",
