@@ -17,7 +17,7 @@
                 });
             dataService.measurements({ limit: 1})
                 .then(function(data) {
-                    $scope.measurements_count = data.meta.found;
+                    $scope.measurements_count = data.meta.found.toLocaleString();
                 });
         };
         
