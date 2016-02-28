@@ -162,7 +162,7 @@
 
         var removeInvalid = function(results) {
             return _.remove(results, function(r) {
-                return r.value == -999;
+                return r.value === -999;
             });
         };
 

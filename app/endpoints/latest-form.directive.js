@@ -1,4 +1,6 @@
 (function() {
+  'use strict';
+
     angular
         .module('app.endpoints')
         .directive('latestForm', function() {
