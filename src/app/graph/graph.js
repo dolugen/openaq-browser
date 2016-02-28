@@ -119,6 +119,9 @@
                         y: {
                             label: {
                                 text: 'PM 2.5 (µg/m³)',
+                            },
+                            padding: {
+                                bottom: 3
                             }
                         }
                     },
@@ -160,12 +163,6 @@
             });
         };
 
-        var removeInvalid = function(results) {
-            return _.remove(results, function(r) {
-                return r.value === -999;
-            });
-        };
-
         var getDataAndGraph = function(locations, data) {
             data = data || [];
             var _progress = (data.length+1) + "/" + (locations.length+data.length);
@@ -179,10 +176,10 @@
                 uri.addSearch('parameter', graph_defaults.parameter);
                 uri.addSearch('date_from', graph_defaults.date_from);
                 uri.addSearch('limit', graph_defaults.limit);
+                uri.addSearch('value_from', 0);
 
                 $http.get(uri.toString())
                     .success(function(response) {
-                        removeInvalid(response.results);
                         data.push({
                             'id': location.country + '-' + location.location,
                             'name': location.location + ', ' + location.city,
