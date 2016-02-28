@@ -13,13 +13,14 @@ module.exports = function(grunt) {
                     'node_modules/angucomplete-alt/dist/angucomplete-alt.min.js',
                     'node_modules/bootstrap/dist/js/bootstrap.min.js',
                     'node_modules/c3/c3.min.js',
-                    'node_modules/c3/node_modules/d3/d3.min.js',
+                    'node_modules/d3/d3.min.js',
                     'node_modules/leaflet/dist/leaflet.js',
                     'node_modules/lodash/index.js',
                     'node_modules/ui-leaflet/dist/ui-leaflet.min.js',
                     'node_modules/urijs/src/URI.min.js'
                 ],
-                dest: 'dist/deps.js'
+                dest: 'dist/deps.js',
+                nonull: true
             },
             css: {
                 src: [
@@ -149,7 +150,7 @@ module.exports = function(grunt) {
         },
         watch: {
             scripts: {
-                files: ['src/**/*.js', 'src/**/*.html'],
+                files: ['*.js', 'src/**/*.js', 'src/**/*.html'],
                 tasks: ['build'],
                 options: {
                     spawn: false,
