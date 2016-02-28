@@ -453,7 +453,11 @@
 
         $scope.updateUrl = function(model) {
             $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
-            params[model] = $scope[model];
+            if($scope[model] !== '') {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
         };
 
         $scope.get_locations = function() {
