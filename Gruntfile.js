@@ -1,4 +1,5 @@
 module.exports = function(grunt) {
+    'use strict';
     
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -104,7 +105,24 @@ module.exports = function(grunt) {
             all: [
                 'Gruntfile.js',
                 'src/app/**/*.js'
-            ]
+            ],
+            options: {
+                "curly": true,
+                "eqnull": true,
+                "eqeqeq": true,
+                "undef": true,
+                "strict": true,
+                "node": true,
+                "globals": {
+                    "localStorage": true,
+                    "angular": true,
+                    "c3": false,
+                    "_": false,
+                    "URI": false,
+                    "$": false,
+                    "module": false
+                }
+            }
         },
         processhtml: {
             options: {
