@@ -35,8 +35,6 @@
             $scope.markers = {};
             $scope.busy = 1;
 
-            var markerc = $scope.countries.filter(getCountry)[0];
-
             return dataService.locations(params)
                 .then(function(data) {
                     $scope.results = data.results;
@@ -44,16 +42,6 @@
 
                     $scope.found = $scope.results.length;
                     $scope.busy = 0;
-
-                    if($scope.found === 0) {
-                        $scope.markers[$scope.country] = {
-                            lat: markerc.latlng[0],
-                            lng: markerc.latlng[1],
-                            message: "No data found on <strong>" + markerc.name + "</strong",
-                            focus: true
-                        };
-                        
-                    }
                 });
         };
 
@@ -66,14 +54,10 @@
                 $scope.markers[index] = {
                     lat: result.coordinates.latitude,
                     lng: result.coordinates.longitude,
-                    message: result.location + ", " + result.city + "<br/>" + result.count,
+                    message: result.location + ", " + result.city + "<br/>" + result.count + " measurements",
                     draggable: false
                 };
             }
-        }
-
-        function getCountry(country) {
-            return country.short_code === $scope.country;
         }
     }
 
