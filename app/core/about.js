@@ -15,7 +15,7 @@
                 .then(function(data) {
                     $scope.locations_count = data.meta.found;
                 });
-            dataService.measurements({ limit: 1})
+            dataService.measurements({ limit: 0})
                 .then(function(data) {
                     $scope.measurements_count = data.meta.found.toLocaleString();
                 });

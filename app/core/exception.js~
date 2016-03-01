@@ -1,0 +1,15 @@
+(function() {
+    'use strict'
+    angular
+        .module('app.core')
+        .factory("errors", function($rootScope){
+            return {
+                catch: function(message){
+                    return function(reason){
+                        $rootScope.addError({message: message, reason: reason})
+                    };
+                }
+            };
+        });
+
+})();
