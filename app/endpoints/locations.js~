@@ -1,0 +1,80 @@
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .controller('LocationsController', LocationsController);
+
+    /* ngInject */
+    function LocationsController($http, $scope, URLService) {
+           var uri = URI(URLService.getOpenAQUrl('locations'));
+        $scope.query_url = uri.toString();
+        $scope.busy = 0;
+        $scope.markers = {};
+
+        $scope.updateUrl = function(model) {
+            $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
+        };
+
+        $scope.get_countries = function() {
+            var uri = URI(URLService.getOpenAQUrl('countries'));
+            $http.get(uri)
+                .success(function(data){
+                    $scope.countries = data.results;
+            });
+        };
+        $scope.get_countries();
+
+        function getMarkers(result, index, ar) {
+            if (result.coordinates) {
+                $scope.markers[index] = {
+                    lat: result.coordinates.latitude,
+                    lng: result.coordinates.longitude,
+                    message: result.location + ", " + result.city + "<br/>" + result.count,
+                    draggable: false
+                };
+            }
+        };
+
+        function getCountry(country) {
+            return country.short_code === $scope.country;
+        };
+
+
+        $scope.mapCenter = {
+            lat: 0,
+            lng: 0,
+            zoom: 2
+        };
+        
+        $scope.fetch = function() {
+            $scope.markers = {};
+            $scope.busy = 1;
+
+            var markerc = $scope.countries.filter(getCountry)[0];
+
+            $http.get($scope.query_url).success(function(data) {
+                $scope.results = data.results;
+                data.results.forEach(getMarkers);
+
+                $scope.found = data.results.length;
+                $scope.busy = 0;
+
+                if($scope.found === 0) {
+                    $scope.markers[$scope.country] = {
+                        lat: markerc.latlng[0],
+                        lng: markerc.latlng[1],
+                        message: "No data found on <strong>" + markerc.name + "</strong",
+                        focus: true
+                    };
+                    
+                }
+            });
+        };
+
+        $scope.submit = function() {
+            $scope.fetch()
+        };
+    };
+
+})();

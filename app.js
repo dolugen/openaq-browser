@@ -125,7 +125,8 @@
             latest: latest,
             measurements: measurements,
             cities: cities,
-            countries: countries
+            countries: countries,
+            fetches: fetches
         };
 
         return service;
@@ -148,6 +149,10 @@
 
         function latest(params) {
             return get('latest', params);
+        }
+
+        function fetches(params) {
+            return get('fetches', params);
         }
 
         function measurements(params) {
@@ -277,6 +282,11 @@
         .controller('AboutController', AboutController);
 
     function AboutController($scope, dataService) {
+        function isFetchOld(relativeDate) {
+            // simple check to see if it's more than an hour old
+            return relativeDate.indexOf("hour") > -1 ? true : false;
+        }
+
         $scope.fetch = function() {
             dataService.countries()
                 .then(function(data) {
@@ -290,6 +300,12 @@
                 .then(function(data) {
                     $scope.measurements_count = data.meta.found.toLocaleString();
                 });
+            dataService.fetches({ limit: 1 })
+            .then(function(data) {
+                var relativeDate = moment(data.results[0].timeStarted).fromNow();
+                $scope.last_fetch_relative = relativeDate;
+                $scope.last_fetch_is_old = isFetchOld(relativeDate);
+            });
         };
         
         $scope.fetch();

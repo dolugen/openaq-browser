@@ -8,11 +8,6 @@
     <p>
       <strong class="text-info">{{ measurements_count }}</strong> measurements and counting...
     </p>
-    <p>
-      Last updated
-      <strong ng-class="last_fetch_is_old ? 'text-danger' : 'text-info'">
-        {{ last_fetch_relative }}</strong>.
-    </p>
   </div>
 </div>
 

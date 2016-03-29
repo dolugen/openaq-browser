@@ -1,0 +1,14 @@
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .directive('measurementsTable', measurementsTable);
+
+    function measurementsTable() {
+        return {
+            'restrict': 'E',
+            'templateUrl': 'measurements-table.html',
+        };
+    };
+})();
