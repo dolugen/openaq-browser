@@ -16,6 +16,7 @@ module.exports = function(grunt) {
                     'node_modules/d3/d3.min.js',
                     'node_modules/leaflet/dist/leaflet.js',
                     'node_modules/lodash/index.js',
+                    'node_modules/moment/min/moment.min.js',
                     'node_modules/ui-leaflet/dist/ui-leaflet.min.js',
                     'node_modules/urijs/src/URI.min.js'
                 ],
@@ -120,6 +121,7 @@ module.exports = function(grunt) {
                     "angular": true,
                     "c3": false,
                     "_": false,
+                    "moment": false,
                     "URI": false,
                     "$": false,
                     "module": false
