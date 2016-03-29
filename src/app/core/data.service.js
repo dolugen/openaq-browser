@@ -13,7 +13,8 @@
             latest: latest,
             measurements: measurements,
             cities: cities,
-            countries: countries
+            countries: countries,
+            fetches: fetches
         };
 
         return service;
@@ -36,6 +37,10 @@
 
         function latest(params) {
             return get('latest', params);
+        }
+
+        function fetches(params) {
+            return get('fetches', params);
         }
 
         function measurements(params) {
