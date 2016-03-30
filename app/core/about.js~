@@ -2,26 +2,41 @@
     'use strict';
 
     angular
-        .module('app.core')
+        .module('app.endpoints')
         .controller('AboutController', AboutController);
 
-    function AboutController($scope, dataService) {
-        $scope.fetch = function() {
-            dataService.countries()
+    function AboutController($http, $log, $scope, URLService, dataService) {
+        var uri = URI(URLService.getUrl('measurements'));
+        $scope.query_url = uri.toString();
+        $scope.busy = 0;
+
+        $scope.locations_count = 601;
+        $scope.countries_count = 142;
+        $scope.measurements_count = 14810249;
+        
+        $scope.get_countries = function() {
+            return dataService.countries()
                 .then(function(data) {
-                    $scope.countries_count = data.meta.found;
-                });
-            dataService.locations()
-                .then(function(data) {
-                    $scope.locations_count = data.meta.found;
-                });
-            dataService.measurements({ limit: 0})
-                .then(function(data) {
-                    $scope.measurements_count = data.meta.found.toLocaleString();
+                    $scope.countries = data.results;
                 });
         };
+        //$scope.get_countries();
+
+        $scope.fetch = function() {
+            $scope.busy = 1;
+
+            return dataService.cities(params)
+                .then(function(data) {
+                    $scope.results = data.results;
+                    $scope.found = data.results.length;
+                    $scope.busy = 0;
+                });
+        };
+
+        $scope.submit = function() {
+            $scope.fetch();
+        };
         
-        $scope.fetch();
     }
 
 })();

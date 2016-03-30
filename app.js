@@ -288,11 +288,11 @@
         }
 
         $scope.fetch = function() {
-            dataService.countries()
+            dataService.countries({ limit: 0})
                 .then(function(data) {
                     $scope.countries_count = data.meta.found;
                 });
-            dataService.locations()
+            dataService.locations({ limit: 0})
                 .then(function(data) {
                     $scope.locations_count = data.meta.found;
                 });
