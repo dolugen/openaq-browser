@@ -1,7 +1,7 @@
 {
   "name": "openaq-browser",
   "version": "0.1.0",
-  "description": "A Simple OpenAQ API Browser",
+  "description": "A web client for OpenAQ API.",
   "main": "index.html",
   "scripts": {
     "start": "http-server -a 0.0.0.0 -p 8000 ./dist",
