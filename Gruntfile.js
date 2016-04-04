@@ -1,6 +1,6 @@
 module.exports = function(grunt) {
     'use strict';
-    
+
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         concat: {
@@ -152,24 +152,65 @@ module.exports = function(grunt) {
             }
         },
         watch: {
-            scripts: {
-                files: ['*.js', 'src/**/*.js', 'src/**/*.html'],
-                tasks: ['build'],
-                options: {
-                    spawn: false,
-                    interval: 1000
-                },
-            },
+            files: [
+                '*.js',
+                'src/*',
+                'src/app/*',
+                'src/app/**/*',
+                'test/*'
+            ],
+            tasks: ['build', 'karma:unit:run'],
+            options: {
+                spawn: false,
+                interval: 1000
+            }
         },
+        browserSync: {
+            bsFiles: {
+                src: [
+                    'Gruntfile.js',
+                    'dist/*,',
+                    'dist/app/**/*'
+                ]
+            },
+            options: {
+                logLevel: "silent",
+                watchTask: true,
+                server: {
+                    baseDir: "./dist",
+                    index: "index.html"
+                }
+            }
+        },
+        karma: {
+            unit: {
+                configFile: 'test/karma.conf.js',
+                background: true,
+                singleRun: false
+            },
+            continuous: {
+                configFile: 'test/karma.conf.js',
+                singleRun: true,
+                browsers: ['PhantomJS']
+            }
+        }
     });
 
+    grunt.loadNpmTasks('grunt-browser-sync');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-processhtml');
+
+    grunt.registerTask('serve', [
+        'browserSync',
+        'karma:unit:start',
+        'watch'
+    ]);
 
     grunt.registerTask('build', [
         'jshint',
@@ -184,9 +225,5 @@ module.exports = function(grunt) {
         'gh-pages'
     ]);
     grunt.registerTask('default', ['build']);
-
-    grunt.event.on('watch', function(action, filepath, target) {
-        grunt.log.writeln(target + ': ' + filepath + ' has ' + action);
-    });
 
 };
