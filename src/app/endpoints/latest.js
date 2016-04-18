@@ -10,6 +10,8 @@
         var uri = URI(URLService.getUrl('latest'));
         var params = {};
         $scope.query_url = uri.toString();
+        $scope.limit = 100;
+        $scope.page = 1;
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
@@ -21,14 +23,26 @@
             }
         };
 
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page'
+            ];
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+            }
+        };
+        setDefaults();
+
         $scope.get_locations = function() {
-            var params = { 
+            var params = {
                 country: $scope.country
             };
             if($scope.city){
                 params.city = $scope.city;
             }
-            
+
             return dataService.locations(params)
                 .then(function(data) {
                     $scope.locations = data.results;
@@ -56,8 +70,8 @@
 
             return dataService.latest(params)
                 .then(function(data) {
-                    $scope.results = data.results;                    
-                    $scope.found = data.results.length;
+                    $scope.results = data.results;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 })
                 .catch(function(message) {
@@ -71,4 +85,3 @@
         };
     }
 })();
-

@@ -6,7 +6,6 @@
   "scripts": {
     "start": "grunt serve",
     "test": "grunt karma:continuous",
-    "prestart": "npm install",
     "pretest": "grunt build",
     "postinstall": "grunt build"
   },

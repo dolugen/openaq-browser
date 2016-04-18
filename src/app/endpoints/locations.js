@@ -10,6 +10,8 @@
         var uri = URI(URLService.getUrl('locations'));
         var params = {};
         $scope.query_url = uri.toString();
+        $scope.limit = 100;
+        $scope.page = 1;
         $scope.busy = 0;
         $scope.markers = {};
         $scope.mapCenter = {
@@ -27,6 +29,18 @@
             }
         };
 
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page'
+            ];
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+            }
+        };
+        setDefaults();
+
         $scope.get_countries = function() {
             return dataService.countries()
                 .then(function(data) {
@@ -34,7 +48,7 @@
                 });
         };
         $scope.get_countries();
-        
+
         $scope.fetch = function() {
             $scope.markers = {};
             $scope.busy = 1;
@@ -43,8 +57,7 @@
                 .then(function(data) {
                     $scope.results = data.results;
                     $scope.results.forEach(getMarkers);
-
-                    $scope.found = $scope.results.length;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 });
         };
