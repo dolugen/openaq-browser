@@ -9,12 +9,30 @@
         var uri = URI(URLService.getUrl('cities'));
         var params = {};
         $scope.query_url = uri.toString();
+        $scope.limit = 100;
+        $scope.page = 1;
         $scope.busy = 0;
-        
+
         $scope.updateUrl = function(model) {
-            params[model] = $scope[model];
             $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
         };
+
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page'
+            ];
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+            }
+        };
+        setDefaults();
 
         $scope.get_countries = function() {
             return dataService.countries()
@@ -30,7 +48,7 @@
             return dataService.cities(params)
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.found = data.results.length;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 });
         };
@@ -38,7 +56,7 @@
         $scope.submit = function() {
             $scope.fetch();
         };
-        
+
     }
 
 })();

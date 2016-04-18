@@ -1,8 +1,7 @@
 <div>
   <locations-form></locations-form>
   <p ng-show="busy">Fetching...</p>
-  <p ng-show="results">Got {{ found }} locations</p>
+  <p ng-show="results">Showing {{ results.length }} of {{ total }} locations</p>
   <leaflet ng-show="results" markers="markers" center="mapCenter" height="600px"></leaflet>
   <locations-table ng-show="results"></locations-table>
 </div>
-

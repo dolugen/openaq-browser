@@ -70,11 +70,25 @@
 
     angular
         .module('app.core')
-        .directive('formQueryUrl', formQueryUrl);
+        .directive('formQueryUrl', formQueryUrl)
+        .directive('paginationInputs', paginationInputs)
+        .directive('fetchButton', fetchButton);
 
     function formQueryUrl() {
         return {
             'templateUrl': 'app/core/query-url.html'
+        };
+    }
+
+    function paginationInputs() {
+        return {
+            'templateUrl': 'app/core/pagination-inputs.html'
+        };
+    }
+
+    function fetchButton() {
+        return {
+            'templateUrl': 'app/core/fetch-button.html'
         };
     }
 
@@ -368,12 +382,30 @@
         var uri = URI(URLService.getUrl('cities'));
         var params = {};
         $scope.query_url = uri.toString();
+        $scope.limit = 100;
+        $scope.page = 1;
         $scope.busy = 0;
-        
+
         $scope.updateUrl = function(model) {
-            params[model] = $scope[model];
             $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
         };
+
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page'
+            ];
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+            }
+        };
+        setDefaults();
 
         $scope.get_countries = function() {
             return dataService.countries()
@@ -389,7 +421,7 @@
             return dataService.cities(params)
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.found = data.results.length;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 });
         };
@@ -397,7 +429,7 @@
         $scope.submit = function() {
             $scope.fetch();
         };
-        
+
     }
 
 })();
@@ -441,9 +473,21 @@
 
     /* ngInject */
     function CountriesController($http, $scope, URLService, dataService) {
-        $scope.query_url = URLService.getUrl('countries');
+        var uri = URLService.getUrl('countries');
+        var params = {};
+        $scope.query_url = uri.toString();
+
         $scope.busy = 0;
-        
+
+        $scope.updateUrl = function(model) {
+            $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
+        };
+
         activate();
 
         $scope.submit = function() {
@@ -456,14 +500,13 @@
             return dataService.countries()
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.found = data.results.length;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 });
         }
     }
 
 })();
-
 
 (function() {
     'use strict';
@@ -494,6 +537,8 @@
         var uri = URI(URLService.getUrl('latest'));
         var params = {};
         $scope.query_url = uri.toString();
+        $scope.limit = 100;
+        $scope.page = 1;
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
@@ -505,14 +550,26 @@
             }
         };
 
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page'
+            ];
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+            }
+        };
+        setDefaults();
+
         $scope.get_locations = function() {
-            var params = { 
+            var params = {
                 country: $scope.country
             };
             if($scope.city){
                 params.city = $scope.city;
             }
-            
+
             return dataService.locations(params)
                 .then(function(data) {
                     $scope.locations = data.results;
@@ -540,8 +597,8 @@
 
             return dataService.latest(params)
                 .then(function(data) {
-                    $scope.results = data.results;                    
-                    $scope.found = data.results.length;
+                    $scope.results = data.results;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 })
                 .catch(function(message) {
@@ -555,7 +612,6 @@
         };
     }
 })();
-
 
 (function() {
   'use strict';
@@ -595,6 +651,8 @@
         var uri = URI(URLService.getUrl('locations'));
         var params = {};
         $scope.query_url = uri.toString();
+        $scope.limit = 100;
+        $scope.page = 1;
         $scope.busy = 0;
         $scope.markers = {};
         $scope.mapCenter = {
@@ -612,6 +670,18 @@
             }
         };
 
+        var setDefaults = function(uri) {
+            var defaultFields = [
+                'limit',
+                'page'
+            ];
+
+            for (var i in defaultFields) {
+                $scope.updateUrl(defaultFields[i]);
+            }
+        };
+        setDefaults();
+
         $scope.get_countries = function() {
             return dataService.countries()
                 .then(function(data) {
@@ -619,7 +689,7 @@
                 });
         };
         $scope.get_countries();
-        
+
         $scope.fetch = function() {
             $scope.markers = {};
             $scope.busy = 1;
@@ -628,8 +698,7 @@
                 .then(function(data) {
                     $scope.results = data.results;
                     $scope.results.forEach(getMarkers);
-
-                    $scope.found = $scope.results.length;
+                    $scope.total = data.meta.found;
                     $scope.busy = 0;
                 });
         };
@@ -693,7 +762,7 @@
         var uri = URI(URLService.getUrl('measurements'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 10;
+        $scope.limit = 100;
         $scope.page = 1;
         $scope.order_by = "date";
         $scope.sort = "desc";
@@ -721,7 +790,7 @@
             }
         };
         setDefaults();
-        
+
         $scope.get_locations = function() {
             var params = {};
             if($scope.country) {
@@ -763,7 +832,7 @@
             return dataService.measurements(params)
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.found = data.meta.found;
+                    $scope.total = data.meta.found;
                     $scope.limit = data.meta.limit;
                     $scope.busy = 0;
                 });

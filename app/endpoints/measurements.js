@@ -9,7 +9,7 @@
         var uri = URI(URLService.getUrl('measurements'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 10;
+        $scope.limit = 100;
         $scope.page = 1;
         $scope.order_by = "date";
         $scope.sort = "desc";
@@ -37,7 +37,7 @@
             }
         };
         setDefaults();
-        
+
         $scope.get_locations = function() {
             var params = {};
             if($scope.country) {
@@ -79,7 +79,7 @@
             return dataService.measurements(params)
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.found = data.meta.found;
+                    $scope.total = data.meta.found;
                     $scope.limit = data.meta.limit;
                     $scope.busy = 0;
                 });

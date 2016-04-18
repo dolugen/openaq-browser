@@ -1,0 +1,22 @@
+<div class="form-group">
+    <div class="col-sm-3">
+        <label for="page">Page number</label>
+            <input
+                 name="page"
+                 ng-model="page"
+                 class="form-control"
+                 type="number"
+                 ng-change="updateUrl('page')"/>
+    </div>
+    <div class="col-sm-3">
+        <label for="limit">Limit per page</label>
+        <input
+             name="limit"
+             ng-model="limit"
+             class="form-control"
+             type="number"
+             ng-change="updateUrl('limit')"
+             />
+    </div>
+    </label>
+</div>
