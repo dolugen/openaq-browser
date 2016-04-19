@@ -1,11 +1,15 @@
 describe("CountriesController", function() {
-    beforeEach(function() { 
+    beforeEach(function() {
         module("app")
     });
 
     var $httpBackend, $rootScope, createController, getRequestHandler;
     var countriesUrl = "https://api.openaq.org/v1/countries";
-    var countriesResponse = { results: [ "Amsterdam", "Andacollo", "Antofagasta" ] };
+    var countriesResponse = {
+        results: [ "Amsterdam", "Andacollo", "Antofagasta" ],
+        meta: {
+            found: 3
+        }};
 
     beforeEach(inject(function($injector) {
         $httpBackend = $injector.get("$httpBackend");
@@ -35,9 +39,9 @@ describe("CountriesController", function() {
             var controller = createController("CountriesController");
             $rootScope.submit();
             $httpBackend.flush();
-            expect($rootScope.found).toEqual(countriesResponse.results.length);
+            expect($rootScope.total).toEqual(countriesResponse.meta.found);
             expect($rootScope.results).toEqual(countriesResponse.results);
         });
     });
-    
+
 });
