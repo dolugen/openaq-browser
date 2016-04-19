@@ -21,7 +21,12 @@
 
         function get(name, params) {
             params = params ? '?' + $.param(params) : '';
-            return $http.get(apiRoot + name + params, { timeout: 10*1000 })
+            var request_options = {
+                timeout: 10*1000,
+                cache: true
+            };
+
+            return $http.get(apiRoot + name + params, request_options)
                 .then(function(result) {
                     return $q.when(result.data);
                 })
