@@ -28,7 +28,8 @@ module.exports = function(grunt) {
                     'node_modules/angucomplete-alt/angucomplete-alt.css',
                     'node_modules/bootstrap/dist/css/bootstrap.min.css',
                     'node_modules/c3/c3.min.css',
-                    'node_modules/leaflet/dist/leaflet.css'
+                    'node_modules/leaflet/dist/leaflet.css',
+                    'src/assets/css/style.css'
                 ],
                 dest: 'dist/css/style.css'
             },
@@ -157,6 +158,7 @@ module.exports = function(grunt) {
                 'src/*',
                 'src/app/*',
                 'src/app/**/*',
+                'src/assets/css/*',
                 'test/*'
             ],
             tasks: ['build', 'karma:unit:run'],

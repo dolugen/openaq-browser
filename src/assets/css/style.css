@@ -1,0 +1,20 @@
+html, body {
+  height: 100%;
+}
+
+main {
+  min-height: 100%;
+}
+
+#content {
+  overflow:auto;
+  padding-bottom:150px; /* this needs to be bigger than footer height*/
+}
+
+footer {
+  position: relative;
+  margin-top: -150px; /* negative value of footer height */
+  height: 150px;
+  clear:both;
+  padding-top:20px;
+}
