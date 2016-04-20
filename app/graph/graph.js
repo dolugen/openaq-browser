@@ -53,7 +53,7 @@
         var fetchLocations = function() {
             var uri = URI(URLService.getUrl('locations'));
             uri.addSearch('parameter', graph_defaults.parameter);
-            $http.get(uri.toString())
+            $http.get(uri.toString(), { cache: true })
                 .success(function(response) {
                     $scope.locationsList = _.map(response.results, function(result) {
                         // for autocomplete description only
@@ -178,7 +178,7 @@
                 uri.addSearch('limit', graph_defaults.limit);
                 uri.addSearch('value_from', 0);
 
-                $http.get(uri.toString())
+                $http.get(uri.toString(), { cache: true })
                     .success(function(response) {
                         data.push({
                             'id': location.country + '-' + location.location,

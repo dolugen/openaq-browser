@@ -145,9 +145,11 @@
 
         return service;
 
-        function get(name, params) {
+        function get(name, params, request_options) {
             params = params ? '?' + $.param(params) : '';
-            return $http.get(apiRoot + name + params, { timeout: 10*1000 })
+            request_options = request_options || { timeout: 10*1000 };
+
+            return $http.get(apiRoot + name + params, request_options)
                 .then(function(result) {
                     return $q.when(result.data);
                 })
@@ -158,7 +160,7 @@
         }
 
         function locations(params) {
-            return get('locations', params);
+            return get('locations', params, { timeout: 10*1000, cache: true });
         }
 
         function latest(params) {
@@ -174,12 +176,13 @@
         }
 
         function cities(params) {
-            return get('cities', params);
+            return get('cities', params, { timeout: 10*1000, cache: true });
         }
 
         function countries(params) {
-            return get('countries', params);
+            return get('countries', params, { timeout: 10*1000, cache: true });
         }
+
     }
 
 })();
@@ -577,7 +580,11 @@
         };
 
         $scope.get_cities = function() {
-            return dataService.cities({ country: $scope.country })
+            var params = {
+                country: $scope.country,
+                limit: 1000
+            };
+            return dataService.cities(params)
                 .then(function(data) {
                     $scope.cities = data.results;
                 });
@@ -807,7 +814,9 @@
         };
 
         $scope.get_cities = function() {
-            var params = {};
+            var params = {
+                limit: 1000
+            };
             if($scope.country){
                 params.country = $scope.country;
             }
@@ -956,7 +965,7 @@
         var fetchLocations = function() {
             var uri = URI(URLService.getUrl('locations'));
             uri.addSearch('parameter', graph_defaults.parameter);
-            $http.get(uri.toString())
+            $http.get(uri.toString(), { cache: true })
                 .success(function(response) {
                     $scope.locationsList = _.map(response.results, function(result) {
                         // for autocomplete description only
@@ -1081,7 +1090,7 @@
                 uri.addSearch('limit', graph_defaults.limit);
                 uri.addSearch('value_from', 0);
 
-                $http.get(uri.toString())
+                $http.get(uri.toString(), { cache: true })
                     .success(function(response) {
                         data.push({
                             'id': location.country + '-' + location.location,

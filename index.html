@@ -43,8 +43,19 @@
     <div class="alert alert-danger" ng-show="message">{{ message }}</div>
   </div>
   -->
-  <div class="container" ng-view>
+  <main>
+    <div id="content" class="container" ng-view>
+  </main>
   </div>
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12 text-muted">
+          An opensource web client for <a href="https://openaq.org">OpenAQ API</a> developed on <a href="https://github.com/dolugen/openaq-browser">Github</a>. MIT license.
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <script src="deps.js"></script>
   <script src="app.js"></script>

@@ -19,9 +19,11 @@
 
         return service;
 
-        function get(name, params) {
+        function get(name, params, request_options) {
             params = params ? '?' + $.param(params) : '';
-            return $http.get(apiRoot + name + params, { timeout: 10*1000 })
+            request_options = request_options || { timeout: 10*1000 };
+
+            return $http.get(apiRoot + name + params, request_options)
                 .then(function(result) {
                     return $q.when(result.data);
                 })
@@ -32,7 +34,7 @@
         }
 
         function locations(params) {
-            return get('locations', params);
+            return get('locations', params, { timeout: 10*1000, cache: true });
         }
 
         function latest(params) {
@@ -48,12 +50,13 @@
         }
 
         function cities(params) {
-            return get('cities', params);
+            return get('cities', params, { timeout: 10*1000, cache: true });
         }
 
         function countries(params) {
-            return get('countries', params);
+            return get('countries', params, { timeout: 10*1000, cache: true });
         }
+
     }
 
 })();

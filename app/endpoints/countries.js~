@@ -1,0 +1,31 @@
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .controller('CountriesController', CountriesController);
+
+    /* ngInject */
+    function CountriesController($http, $scope, URLService) {
+        $scope.query_url = URLService.getOpenAQUrl('countries');
+        $scope.busy = 0;
+        
+        activate();
+
+        $scope.submit = function() {
+            activate();
+        };
+
+        var activate = function() {
+            $scope.busy = 1;
+
+            $http.get($scope.query_url).success(function(data) {
+                $scope.results = data.results;
+                $scope.found = data.results.length;
+                $scope.busy = 0;
+            });
+        };
+
+    }
+})();
+
