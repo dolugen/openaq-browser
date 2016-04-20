@@ -54,7 +54,9 @@
         };
 
         $scope.get_cities = function() {
-            var params = {};
+            var params = {
+                limit: 1000
+            };
             if($scope.country){
                 params.country = $scope.country;
             }

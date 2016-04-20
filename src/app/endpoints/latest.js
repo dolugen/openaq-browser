@@ -50,7 +50,11 @@
         };
 
         $scope.get_cities = function() {
-            return dataService.cities({ country: $scope.country })
+            var params = {
+                country: $scope.country,
+                limit: 1000
+            };
+            return dataService.cities(params)
                 .then(function(data) {
                     $scope.cities = data.results;
                 });
