@@ -9,4 +9,4 @@ npm install
 npm start
 ```
 
-It will install everything needed and start the server at `http://localhost:8000/`.
+It will install everything needed and start the server at `http://localhost:3001/`.
