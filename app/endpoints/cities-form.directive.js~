@@ -8,7 +8,7 @@
     function citiesForm() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/cities-form.html',
+            'templateUrl': 'cities-form.html',
         };
-    }
+    };
 })();

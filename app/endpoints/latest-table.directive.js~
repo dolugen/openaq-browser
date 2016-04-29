@@ -1,0 +1,10 @@
+(function() {
+    angular
+        .module('app.endpoints')
+        .directive('latestTable', function() {
+            return {
+                'restrict': 'E',
+                'templateUrl': 'latest-table.html',
+            };
+        });
+})();

@@ -385,8 +385,6 @@
         var uri = URI(URLService.getUrl('cities'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 100;
-        $scope.page = 1;
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
@@ -397,18 +395,6 @@
                 delete params[model];
             }
         };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
-            }
-        };
-        setDefaults();
 
         $scope.get_countries = function() {
             return dataService.countries()
@@ -462,7 +448,22 @@
     function citiesForm() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/locations-form.html',
+            'templateUrl': 'app/endpoints/cities-form.html',
+        };
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .directive('coordinatesForm', coordinatesForm);
+
+    function coordinatesForm() {
+        return {
+            'restrict': 'E',
+            'templateUrl': 'app/endpoints/coordinates-form.html',
         };
     }
 })();
@@ -540,8 +541,6 @@
         var uri = URI(URLService.getUrl('latest'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 100;
-        $scope.page = 1;
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
@@ -552,18 +551,6 @@
                 delete params[model];
             }
         };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
-            }
-        };
-        setDefaults();
 
         $scope.get_locations = function() {
             var params = {
@@ -658,8 +645,6 @@
         var uri = URI(URLService.getUrl('locations'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 100;
-        $scope.page = 1;
         $scope.busy = 0;
         $scope.markers = {};
         $scope.mapCenter = {
@@ -676,18 +661,6 @@
                 delete params[model];
             }
         };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
-            }
-        };
-        setDefaults();
 
         $scope.get_countries = function() {
             return dataService.countries()
@@ -769,8 +742,6 @@
         var uri = URI(URLService.getUrl('measurements'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 100;
-        $scope.page = 1;
         $scope.order_by = "date";
         $scope.sort = "desc";
         $scope.busy = 0;
@@ -783,20 +754,6 @@
                 delete params[model];
             }
         };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page',
-                'order_by',
-                'sort'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
-            }
-        };
-        setDefaults();
 
         $scope.get_locations = function() {
             var params = {};

@@ -1,0 +1,12 @@
+(function() {
+    angular
+        .module('app.core')
+        .directive('formQueryUrl', formQueryUrl);
+
+    function formQueryUrl() {
+        return {
+            'templateUrl': 'query-url.html'
+        }
+    });
+
+})();

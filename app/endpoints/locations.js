@@ -10,8 +10,6 @@
         var uri = URI(URLService.getUrl('locations'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 100;
-        $scope.page = 1;
         $scope.busy = 0;
         $scope.markers = {};
         $scope.mapCenter = {
@@ -28,18 +26,6 @@
                 delete params[model];
             }
         };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
-            }
-        };
-        setDefaults();
 
         $scope.get_countries = function() {
             return dataService.countries()

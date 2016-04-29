@@ -1,3 +1,4 @@
+<fieldset>
 <div class="form-group">
     <div class="col-sm-3">
         <label for="page">Page number</label>
@@ -6,7 +7,7 @@
                  ng-model="page"
                  class="form-control"
                  type="number"
-                 placeholder="1"
+               
                  ng-change="updateUrl('page')"/>
     </div>
     <div class="col-sm-3">
@@ -22,3 +23,4 @@
     </div>
     </label>
 </div>
+</fieldset>

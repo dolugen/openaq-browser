@@ -1,23 +1,21 @@
 <div class="form-group">
     <div class="col-sm-3">
-        <label for="page">Page number</label>
+        <label for="page">Coordinates (lat,lon)</label>
             <input
                  name="page"
-                 ng-model="page"
+                 ng-model="coordinates"
                  class="form-control"
                  type="number"
-                 placeholder="1"
-                 ng-change="updateUrl('page')"/>
+                 ng-change="updateUrl('coordinates')"/>
     </div>
     <div class="col-sm-3">
-        <label for="limit">Limit per page</label>
+        <label for="limit">Radius</label>
         <input
              name="limit"
-             ng-model="limit"
+             ng-model="radius"
              class="form-control"
              type="number"
-             placeholder="100"
-             ng-change="updateUrl('limit')"
+             ng-change="updateUrl('radius')"
              />
     </div>
     </label>

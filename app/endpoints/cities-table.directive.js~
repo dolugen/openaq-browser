@@ -3,12 +3,12 @@
 
     angular
         .module('app.endpoints')
-        .directive('citiesForm', citiesForm);
+        .directive('citiesTable', citiesTable);
 
-    function citiesForm() {
+    function citiesTable() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/cities-form.html',
+            'templateUrl': 'cities-table.html',
         };
-    }
+    };
 })();

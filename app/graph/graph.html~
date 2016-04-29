@@ -1,0 +1,49 @@
+<div class="page-header">
+  <h1>PM 2.5 Measurements from Past Week in Select Locations</h1>
+</div>
+<div ng-show="status">{{ status }}</div>
+<div id="chart"></div>
+<form ng-submit="updateGraph()">
+  <!-- <div class="form-group">
+    <select class="form-control" ng-model="date_from">
+      <option ng-repeat="df in date_from_filters"
+              value="{{ df.value }}">
+        {{ df.text}}
+      </option>
+    </select>
+  </div> -->
+  <angucomplete-alt id="ex1"
+                    placeholder="Search from {{ locationsList.length }} locations with {{ parameter }} measurements"
+                    pause="100"
+                    selected-object="selectedObject"
+                    local-data="locationsList"
+                    search-fields="location,city,country"
+                    title-field="location"
+                    description-field="city_country"
+                    minlength="1"
+                    input-class="form-control form-control-small"
+                    match-class="mark"
+                    clear-selected="true">
+  </angucomplete-alt>
+  <table class="table table-striped table-bordered table-hover">
+    <th>location</th>
+    <th>city, country</th>
+    <th></th>
+    <tr ng-repeat="location in selectedLocations track by location.location">
+      <td>{{ location.location }}</td>
+      <td>{{ location.city }}, {{ location.country }}</td>
+      <td>
+        <button class="btn" ng-click="removeLocation(location)">
+          Remove
+        </button>
+      </td>
+    </tr>
+  </table>
+  <button type="submit" class="btn btn-primary">
+    Reload Graph
+  </button>
+  <button type="button" ng-click="resetLocations()" class="btn pull-right">
+    Reset Locations
+  </button>
+</form>
+
