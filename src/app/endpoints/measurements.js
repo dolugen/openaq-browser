@@ -9,8 +9,6 @@
         var uri = URI(URLService.getUrl('measurements'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 100;
-        $scope.page = 1;
         $scope.order_by = "date";
         $scope.sort = "desc";
         $scope.busy = 0;
@@ -23,20 +21,6 @@
                 delete params[model];
             }
         };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page',
-                'order_by',
-                'sort'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
-            }
-        };
-        setDefaults();
 
         $scope.get_locations = function() {
             var params = {};
