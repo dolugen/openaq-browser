@@ -54,6 +54,7 @@ module.exports = function(grunt) {
                     "src/app/endpoints/cities.js",
                     "src/app/endpoints/cities-table.directive.js",
                     "src/app/endpoints/cities-form.directive.js",
+                    "src/app/endpoints/coordinates-form.directive.js",
                     "src/app/endpoints/countries.js",
                     "src/app/endpoints/countries.directive.js",
                     "src/app/endpoints/latest.js",
