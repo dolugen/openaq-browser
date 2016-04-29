@@ -2,16 +2,55 @@
   <div class="col-sm-12">
     <form-query-url></form-query-url>
   </div>
+
   <div class="form-group">
-      <div class="col-sm-12">
-    <select class="form-control" ng-model="country" ng-change="updateUrl('country')">
-      <option value="">All countries</option>
-      <option ng-repeat="country in countries" value="{{ country.code }}">
-        {{ country.name}}
-      </option>
-    </select>
+    <div class="col-sm-3">
+      <select class="form-control" ng-model="country" ng-change="updateUrl('country'); get_cities()">
+        <option value="">All countries</option>
+        <option ng-repeat="country in countries" value="{{ country.code }}">
+          {{ country.name }}
+        </option>
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <select class="form-control" ng-model="city" ng-change="updateUrl('city'); get_locations()">
+        <option value="">All cities</option>
+        <option ng-repeat="city in cities" value="{{ city.city }}">
+          {{ city.city }}
+        </option>
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <select class="form-control" ng-model="location" ng-change="updateUrl('location')">
+        <option value="">All locations</option>
+        <option ng-repeat="location in locations" value="{{ location.location }}">
+          {{ location.location }}
+        </option>
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <select class="form-control" ng-model="parameter" ng-change="updateUrl('parameter')">
+        <option value="">All parameters</option>
+        <option value="pm25">PM 2.5</option>
+        <option value="pm10">PM 10</option>
+        <option value="so2">SO₂</option>
+        <option value="no2">NO₂</option>
+        <option value="o3">O₃</option>
+        <option value="co">CO</option>
+        <option value="bc">BC</option>
+      </select>
     </div>
   </div>
+
+  <div class="form-group">
+      <select class="form-control" ng-model="has_g" ng-change="updateUrl('has_geo')">
+        <option value="">Filter by geo info</option>
+        <option value="true">Show records with geo info</option>
+        <option value="false">Show records without geo info</option>
+      </select>
+    </div>
+  </div>
+
   <coordinates-form></coordinates-form>
   <pagination-inputs></pagination-inputs>
   <fetch-button></fetch-button>

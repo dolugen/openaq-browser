@@ -27,6 +27,35 @@
             }
         };
 
+        $scope.get_locations = function() {
+            var params = {};
+            if($scope.country) {
+                params.country = $scope.country;
+            }
+            if($scope.city){
+                params.city = $scope.city;
+            }
+
+            return dataService.locations(params)
+                .then(function(data) {
+                    $scope.locations = data.results;
+                });
+        };
+
+        $scope.get_cities = function() {
+            var params = {
+                limit: 1000
+            };
+            if($scope.country){
+                params.country = $scope.country;
+            }
+
+            return dataService.cities(params)
+                .then(function(data) {
+                    $scope.cities = data.results;
+                });
+        };
+
         $scope.get_countries = function() {
             return dataService.countries()
                 .then(function(data) {

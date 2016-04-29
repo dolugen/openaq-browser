@@ -534,6 +534,21 @@
 
     angular
         .module('app.endpoints')
+        .directive('hasGeoInput', hasGeoInput);
+
+    function hasGeoInput() {
+        return {
+            'restrict': 'E',
+            'templateUrl': 'app/endpoints/has-geo-input.html',
+        };
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
         .controller('LatestController', LatestController);
 
     /* ngInject */
@@ -660,6 +675,35 @@
             } else {
                 delete params[model];
             }
+        };
+
+        $scope.get_locations = function() {
+            var params = {};
+            if($scope.country) {
+                params.country = $scope.country;
+            }
+            if($scope.city){
+                params.city = $scope.city;
+            }
+
+            return dataService.locations(params)
+                .then(function(data) {
+                    $scope.locations = data.results;
+                });
+        };
+
+        $scope.get_cities = function() {
+            var params = {
+                limit: 1000
+            };
+            if($scope.country){
+                params.country = $scope.country;
+            }
+
+            return dataService.cities(params)
+                .then(function(data) {
+                    $scope.cities = data.results;
+                });
         };
 
         $scope.get_countries = function() {
