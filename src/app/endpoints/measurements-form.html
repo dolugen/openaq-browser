@@ -105,20 +105,6 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <div class="col-sm-12">
-          <button type="submit" class="btn btn-primary" >
-            <i class="glyphicon glyphicon-refresh"></i>
-            Fetch
-          </button>
-          <a href="{{ query_url }}&format=csv" title="Download as CSV file"
-             type="button" class="btn btn-default">
-            <i class="glyphicon glyphicon-download"></i>
-            CSV
-          </a>
-        </div>
-      </div>
-      
     </div>
 
     <div class="col-sm-4">
@@ -183,7 +169,6 @@
                   class="form-control"
                   placeholder="latitude,longitude"
                   ng-change="updateUrl('coordinates')"/>
-              <p class="help-block">Search around this coordinate.</p>
             </div>
           </div>
 
@@ -198,7 +183,6 @@
                   type="number"
                   ng-change="updateUrl('radius')"
               />
-              <p class="help-block">Radius of the circular search area. Should be used with coordinates.</p>
             </div>
           </div>
 
@@ -271,6 +255,20 @@
 
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <div class="col-sm-12">
+      <button type="submit" class="btn btn-primary" >
+        <i class="glyphicon glyphicon-refresh"></i>
+        Fetch Data
+      </button>
+      <a href="{{ query_url }}&format=csv" title="Download as CSV file"
+         type="button" class="btn btn-default">
+        <i class="glyphicon glyphicon-download"></i>
+        Download CSV
+      </a>
     </div>
   </div>
 
