@@ -2,96 +2,247 @@
   <div class="col-sm-12">
     <form-query-url></form-query-url>
   </div>
-  <div class="form-group">
-    <div class="col-sm-3">
-      <select class="form-control" ng-model="country" ng-change="updateUrl('country'); get_cities()">
-        <option value="">All countries</option>
-        <option ng-repeat="country in countries" value="{{ country.code }}">
-          {{ country.name }}
-        </option>
-      </select>
+
+  <div class="row">
+    <div class="col-sm-4">
+      
+      <div class="panel panel-primary">
+        <div class="panel-heading">Location & Parameter</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="country" class="col-sm-4 control-label">Country</label>
+            <div class="col-sm-8">
+              <select class="form-control" ng-model="country" ng-change="updateUrl('country'); get_cities()">
+                <option value="">All countries</option>
+                <option ng-repeat="country in countries" value="{{ country.code }}">
+                  {{ country.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="city" class="col-sm-4 control-label">City</label>
+            <div class="col-sm-8">
+              <select class="form-control" ng-model="city" ng-change="updateUrl('city'); get_locations()">
+                <option value="">All cities</option>
+                <option ng-repeat="city in cities" value="{{ city.city }}">
+                  {{ city.city }}
+                </option>
+              </select>
+            </div>    
+          </div>
+          <div class="form-group">
+            <label for="location" class="col-sm-4 control-label">Location</label>
+            <div class="col-sm-8">
+              <select class="form-control" ng-model="location" ng-change="updateUrl('location')">
+                <option value="">All locations</option>
+                <option ng-repeat="location in locations" value="{{ location.location }}">
+                  {{ location.location }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="parameter" class="col-sm-4 control-label">Parameter</label>
+            <div class="col-sm-8">
+              <select class="form-control" ng-model="parameter" ng-change="updateUrl('parameter')">
+                <option value="">All parameters</option>
+                <option value="pm25">PM 2.5</option>
+                <option value="pm10">PM 10</option>
+                <option value="so2">SO₂</option>
+                <option value="no2">NO₂</option>
+                <option value="o3">O₃</option>
+                <option value="co">CO</option>
+                <option value="bc">BC</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">Pagination</div>
+        <div class="panel-body">
+
+          <div class="form-group">
+            <label for="page" class="col-sm-4 control-label">Page</label>
+            <div class="col-sm-8">
+              <input class="form-control"
+                     ng-model="page"
+                     value="{{ page }}"
+                     placeholder="1"
+                     ng-change="updateUrl('page')">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="limit" class="col-sm-4 control-label">Limit</label>
+            <div class="col-sm-8">
+              <input class="form-control"
+                     ng-model="limit"
+                     value="{{ limit }}"
+                     placeholder="100"
+                     ng-change="updateUrl('limit')">
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="col-sm-12">
+          <button type="submit" class="btn btn-primary" >
+            <i class="glyphicon glyphicon-refresh"></i>
+            Fetch
+          </button>
+          <a href="{{ query_url }}&format=csv" title="Download as CSV file"
+             type="button" class="btn btn-default">
+            <i class="glyphicon glyphicon-download"></i>
+            CSV
+          </a>
+        </div>
+      </div>
+      
     </div>
-    <div class="col-sm-3">
-      <select class="form-control" ng-model="city" ng-change="updateUrl('city'); get_locations()">
-        <option value="">All cities</option>
-        <option ng-repeat="city in cities" value="{{ city.city }}">
-          {{ city.city }}
-        </option>
-      </select>
+
+    <div class="col-sm-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">Filters</div>
+        <div class="panel-body">
+
+          <div class="form-group">
+            <label for="value_from" class="col-sm-4 control-label">Value From</label>
+            <div class="col-sm-8">
+              <input class="form-control"
+                     ng-model="value_from"
+                     value="{{ value_from }}"
+                     placeholder=""
+                     ng-change="updateUrl('value_from')">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="value_to" class="col-sm-4 control-label">Value To</label>
+            <div class="col-sm-8">
+              <input class="form-control"
+                     ng-model="value_to"
+                     value="{{ value_to }}"
+                     placeholder=""
+                     ng-change="updateUrl('value_to')">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="date_from" class="col-sm-4 control-label">Date From</label>
+            <div class="col-sm-8">
+              <input class="form-control"
+                     ng-model="date_from"
+                     value="{{ date_from }}"
+                     placeholder="e.g. 2015-11-01"
+                     ng-change="updateUrl('date_from')">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="date_to" class="col-sm-4 control-label">Date To</label>
+            <div class="col-sm-8">
+              <input class="form-control"
+                     ng-model="date_to"
+                     value="{{ date_to }}"
+                     placeholder="e.g. 2015-11-15"
+                     ng-change="updateUrl('date_to')">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="page" class="col-sm-4 control-label">Coordinates</label>
+            <div class="col-sm-8">
+              <input
+                  name="page"
+                  ng-model="coordinates"
+                  class="form-control"
+                  placeholder="latitude,longitude"
+                  ng-change="updateUrl('coordinates')"/>
+              <p class="help-block">Search around this coordinate.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="limit" class="col-sm-4 control-label">Radius</label>
+            <div class="col-sm-8">
+              <input
+                  name="limit"
+                  ng-model="radius"
+                  class="form-control"
+                  placeholder="2500"
+                  type="number"
+                  ng-change="updateUrl('radius')"
+              />
+              <p class="help-block">Radius of the circular search area. Should be used with coordinates.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="has_geo" class="col-sm-4 control-label">Geo filter</label>
+            <div class="col-sm-8">
+              <select name="has_geo" class="form-control" ng-model="has_geo" ng-change="updateUrl('has_geo')">
+                <option value="">Don't filter</option>
+                <option value="true">Show records with geo info</option>
+                <option value="false">Show records without geo info</option>
+              </select>
+            </div>
+          </div>
+          
+        </div>
+      </div>
     </div>
-    <div class="col-sm-3">
-      <select class="form-control" ng-model="location" ng-change="updateUrl('location')">
-        <option value="">All locations</option>
-        <option ng-repeat="location in locations" value="{{ location.location }}">
-          {{ location.location }}
-        </option>
-      </select>
-    </div>
-    <div class="col-sm-3">
-      <select class="form-control" ng-model="parameter" ng-change="updateUrl('parameter')">
-        <option value="">All parameters</option>
-        <option value="pm25">PM 2.5</option>
-        <option value="pm10">PM 10</option>
-        <option value="so2">SO₂</option>
-        <option value="no2">NO₂</option>
-        <option value="o3">O₃</option>
-        <option value="co">CO</option>
-        <option value="bc">BC</option>
-      </select>
+
+    <div class="col-sm-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">Sorting & other fields</div>
+        <div class="panel-body">
+
+          <div class="form-group">
+            <label for="order_by" class="col-sm-4 control-label">Order By</label>
+            <div class="col-sm-8">
+              <select class="form-control" ng-model="order_by" ng-change="updateUrl('order_by')">
+                <option value="date">Date</option>
+                <option value="value">Value</option>
+                <option value="location">Location</option>
+                <option value="country">Country</option>
+                <option value="city">City</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="sort" class="col-sm-4 control-label">In</label>
+            <div class="col-sm-8">
+              <select class="form-control" ng-model="sort" ng-change="updateUrl('sort')">
+                <option value="desc">Descending order</option>
+                <option value="asc">Ascending order</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="include_fields" class="col-sm-4 control-label">
+              Include Fields
+            </label>
+            <div class="col-sm-8">
+              <input
+                  name="include_fields"
+                  ng-model="include_fields"
+                  class="form-control"
+                  type="text"
+                  ng-change="updateUrl('include_fields')"
+              />
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="form-group">
-    <div class="col-sm-3">
-      <input class="form-control"
-             ng-model="date_from"
-             value="{{ date_from }}"
-             placeholder="date_from (e.g. 2015-11-01)"
-             ng-change="updateUrl('date_from')">
-    </div>
-    <div class="col-sm-3">
-      <input class="form-control"
-             ng-model="date_to"
-             value="{{ date_to }}"
-             placeholder="date_to (e.g. 2015-11-15)"
-             ng-change="updateUrl('date_to')">
-    </div>
-    <div class="col-sm-3">
-      <select class="form-control" ng-model="order_by" ng-change="updateUrl('order_by')">
-        <option value="date">Date</option>
-        <option value="value">Value</option>
-        <option value="location">Location</option>
-        <option value="country">Country</option>
-        <option value="city">City</option>
-      </select>
-    </div>
-    <div class="col-sm-3">
-      <select class="form-control" ng-model="sort" ng-change="updateUrl('sort')">
-        <option value="desc">Descending order</option>
-        <option value="asc">Ascending order</option>
-      </select>
-    </div>
-  </div>
-
-
-  <div class="form-group">
-    <coordinates-form></coordinates-form>
-    <has-geo-input></has-geo-input>
-  </div>
-
-  <pagination-inputs></pagination-inputs>
-
-  <div class="form-group">
-    <div class="col-sm-12">
-      <button type="submit" class="btn btn-primary" >
-        <i class="glyphicon glyphicon-refresh"></i>
-        Fetch
-      </button>
-      <a href="{{ query_url }}&format=csv" title="Download as CSV file"
-         type="button" class="btn btn-default pull-right">
-        <i class="glyphicon glyphicon-download"></i>
-        CSV
-      </a>
-    </div>
-  </div>
 </form>
