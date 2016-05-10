@@ -12,7 +12,10 @@
           <div class="form-group">
             <label for="country" class="col-sm-4 control-label">Country</label>
             <div class="col-sm-8">
-              <select class="form-control" ng-model="country" ng-change="updateUrl('country'); get_cities()">
+              <select class="form-control"
+                      id="country"
+                      ng-model="country"
+                      ng-change="updateUrl('country'); get_cities()">
                 <option value="">All countries</option>
                 <option ng-repeat="country in countries" value="{{ country.code }}">
                   {{ country.name }}
@@ -23,7 +26,10 @@
           <div class="form-group">
             <label for="city" class="col-sm-4 control-label">City</label>
             <div class="col-sm-8">
-              <select class="form-control" ng-model="city" ng-change="updateUrl('city'); get_locations()">
+              <select class="form-control"
+                      id="city"
+                      ng-model="city"
+                      ng-change="updateUrl('city'); get_locations()">
                 <option value="">All cities</option>
                 <option ng-repeat="city in cities" value="{{ city.city }}">
                   {{ city.city }}
@@ -34,7 +40,10 @@
           <div class="form-group">
             <label for="location" class="col-sm-4 control-label">Location</label>
             <div class="col-sm-8">
-              <select class="form-control" ng-model="location" ng-change="updateUrl('location')">
+              <select class="form-control"
+                      id="location"
+                      ng-model="location"
+                      ng-change="updateUrl('location')">
                 <option value="">All locations</option>
                 <option ng-repeat="location in locations" value="{{ location.location }}">
                   {{ location.location }}
@@ -45,7 +54,10 @@
           <div class="form-group">
             <label for="parameter" class="col-sm-4 control-label">Parameter</label>
             <div class="col-sm-8">
-              <select class="form-control" ng-model="parameter" ng-change="updateUrl('parameter')">
+              <select class="form-control"
+                      id="parameter"
+                      ng-model="parameter"
+                      ng-change="updateUrl('parameter')">
                 <option value="">All parameters</option>
                 <option value="pm25">PM 2.5</option>
                 <option value="pm10">PM 10</option>
@@ -68,9 +80,11 @@
             <label for="page" class="col-sm-4 control-label">Page</label>
             <div class="col-sm-8">
               <input class="form-control"
+                     id="page"
                      ng-model="page"
                      value="{{ page }}"
                      placeholder="1"
+                     type="number"
                      ng-change="updateUrl('page')">
             </div>
           </div>
@@ -79,9 +93,11 @@
             <label for="limit" class="col-sm-4 control-label">Limit</label>
             <div class="col-sm-8">
               <input class="form-control"
+                     id="limit"
                      ng-model="limit"
                      value="{{ limit }}"
                      placeholder="100"
+                     type="number"
                      ng-change="updateUrl('limit')">
             </div>
           </div>
@@ -114,6 +130,7 @@
             <label for="value_from" class="col-sm-4 control-label">Value From</label>
             <div class="col-sm-8">
               <input class="form-control"
+                     id="value_from"
                      ng-model="value_from"
                      value="{{ value_from }}"
                      placeholder=""
@@ -125,6 +142,7 @@
             <label for="value_to" class="col-sm-4 control-label">Value To</label>
             <div class="col-sm-8">
               <input class="form-control"
+                     id="value_to"
                      ng-model="value_to"
                      value="{{ value_to }}"
                      placeholder=""
@@ -136,6 +154,7 @@
             <label for="date_from" class="col-sm-4 control-label">Date From</label>
             <div class="col-sm-8">
               <input class="form-control"
+                     id="date_from"
                      ng-model="date_from"
                      value="{{ date_from }}"
                      placeholder="e.g. 2015-11-01"
@@ -147,6 +166,7 @@
             <label for="date_to" class="col-sm-4 control-label">Date To</label>
             <div class="col-sm-8">
               <input class="form-control"
+                     id="date_to"
                      ng-model="date_to"
                      value="{{ date_to }}"
                      placeholder="e.g. 2015-11-15"
@@ -155,10 +175,10 @@
           </div>
 
           <div class="form-group">
-            <label for="page" class="col-sm-4 control-label">Coordinates</label>
+            <label for="coordinates" class="col-sm-4 control-label">Coordinates</label>
             <div class="col-sm-8">
               <input
-                  name="page"
+                  id="coordinates"
                   ng-model="coordinates"
                   class="form-control"
                   placeholder="latitude,longitude"
@@ -168,10 +188,10 @@
           </div>
 
           <div class="form-group">
-            <label for="limit" class="col-sm-4 control-label">Radius</label>
+            <label for="radius" class="col-sm-4 control-label">Radius</label>
             <div class="col-sm-8">
               <input
-                  name="limit"
+                  id="radius"
                   ng-model="radius"
                   class="form-control"
                   placeholder="2500"
@@ -185,7 +205,10 @@
           <div class="form-group">
             <label for="has_geo" class="col-sm-4 control-label">Geo filter</label>
             <div class="col-sm-8">
-              <select name="has_geo" class="form-control" ng-model="has_geo" ng-change="updateUrl('has_geo')">
+              <select id="has_geo"
+                      class="form-control"
+                      ng-model="has_geo"
+                      ng-change="updateUrl('has_geo')">
                 <option value="">Don't filter</option>
                 <option value="true">Show records with geo info</option>
                 <option value="false">Show records without geo info</option>
@@ -205,7 +228,10 @@
           <div class="form-group">
             <label for="order_by" class="col-sm-4 control-label">Order By</label>
             <div class="col-sm-8">
-              <select class="form-control" ng-model="order_by" ng-change="updateUrl('order_by')">
+              <select id="order_by"
+                      class="form-control"
+                      ng-model="order_by"
+                      ng-change="updateUrl('order_by')">
                 <option value="date">Date</option>
                 <option value="value">Value</option>
                 <option value="location">Location</option>
@@ -218,7 +244,10 @@
           <div class="form-group">
             <label for="sort" class="col-sm-4 control-label">In</label>
             <div class="col-sm-8">
-              <select class="form-control" ng-model="sort" ng-change="updateUrl('sort')">
+              <select id="sort"
+                      class="form-control"
+                      ng-model="sort"
+                      ng-change="updateUrl('sort')">
                 <option value="desc">Descending order</option>
                 <option value="asc">Ascending order</option>
               </select>
@@ -231,7 +260,7 @@
             </label>
             <div class="col-sm-8">
               <input
-                  name="include_fields"
+                  id="include_fields"
                   ng-model="include_fields"
                   class="form-control"
                   type="text"
