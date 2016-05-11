@@ -5,109 +5,104 @@
 
   <div class="row">
     <div class="col-sm-4">
-      
-      <div class="panel panel-primary">
-        <div class="panel-heading">Location & Parameter</div>
-        <div class="panel-body">
-          <div class="form-group">
-            <label for="country" class="col-sm-4 control-label">Country</label>
-            <div class="col-sm-8">
-              <select class="form-control"
-                      id="country"
-                      ng-model="country"
-                      ng-change="updateUrl('country'); get_cities()">
-                <option value="">All countries</option>
-                <option ng-repeat="country in countries" value="{{ country.code }}">
-                  {{ country.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="city" class="col-sm-4 control-label">City</label>
-            <div class="col-sm-8">
-              <select class="form-control"
-                      id="city"
-                      ng-model="city"
-                      ng-change="updateUrl('city'); get_locations()">
-                <option value="">All cities</option>
-                <option ng-repeat="city in cities" value="{{ city.city }}">
-                  {{ city.city }}
-                </option>
-              </select>
-            </div>    
-          </div>
-          <div class="form-group">
-            <label for="location" class="col-sm-4 control-label">Location</label>
-            <div class="col-sm-8">
-              <select class="form-control"
-                      id="location"
-                      ng-model="location"
-                      ng-change="updateUrl('location')">
-                <option value="">All locations</option>
-                <option ng-repeat="location in locations" value="{{ location.location }}">
-                  {{ location.location }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="parameter" class="col-sm-4 control-label">Parameter</label>
-            <div class="col-sm-8">
-              <select class="form-control"
-                      id="parameter"
-                      ng-model="parameter"
-                      ng-change="updateUrl('parameter')">
-                <option value="">All parameters</option>
-                <option value="pm25">PM 2.5</option>
-                <option value="pm10">PM 10</option>
-                <option value="so2">SO₂</option>
-                <option value="no2">NO₂</option>
-                <option value="o3">O₃</option>
-                <option value="co">CO</option>
-                <option value="bc">BC</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
+      <panel-main></panel-main>
 
-      <div class="panel panel-default">
-        <div class="panel-heading">Pagination</div>
-        <div class="panel-body">
-
-          <div class="form-group">
-            <label for="page" class="col-sm-4 control-label">Page</label>
-            <div class="col-sm-8">
-              <input class="form-control"
-                     id="page"
-                     ng-model="page"
-                     value="{{ page }}"
-                     placeholder="1"
-                     type="number"
-                     min="1"
-                     ng-change="updateUrl('page')">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="limit" class="col-sm-4 control-label">Limit</label>
-            <div class="col-sm-8">
-              <input class="form-control"
-                     id="limit"
-                     ng-model="limit"
-                     value="{{ limit }}"
-                     placeholder="100"
-                     type="number"
-                     min="0"
-                     ng-change="updateUrl('limit')">
-            </div>
-          </div>
-          
+      <div class="form-group">
+        <div class="col-sm-12">
+          <button type="submit" class="btn btn-primary" >
+            <i class="glyphicon glyphicon-refresh"></i>
+            Fetch Data
+          </button>
+          <a href="{{ query_url }}&format=csv" title="Download as CSV file"
+             type="button" class="btn btn-default">
+            <i class="glyphicon glyphicon-download"></i>
+            Download CSV
+          </a>
         </div>
       </div>
 
     </div>
+
+    <div class="col-sm-4">
+      <pagination-inputs></pagination-inputs>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">Sorting & other fields</div>
+        <div class="panel-body">
+
+          <div class="form-group">
+            <label for="order_by" class="col-sm-4 control-label">Order By</label>
+            <div class="col-sm-8">
+              <select id="order_by"
+                      class="form-control"
+                      ng-model="order_by"
+                      ng-change="updateUrl('order_by')">
+                <option value="date">Date</option>
+                <option value="value">Value</option>
+                <option value="location">Location</option>
+                <option value="country">Country</option>
+                <option value="city">City</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="sort" class="col-sm-4 control-label">In</label>
+            <div class="col-sm-8">
+              <select id="sort"
+                      class="form-control"
+                      ng-model="sort"
+                      ng-change="updateUrl('sort')">
+                <option value="desc">Descending order</option>
+                <option value="asc">Ascending order</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            
+            <label for="" class="col-sm-4">
+              Include Fields
+            </label>
+            <div class="col-sm-8">
+              
+              <div class="checkbox">
+                <label>
+                  <input
+                      ng-model="include_fields.attribution"
+                      type="checkbox"
+                      ng-change="updateUrl('include_fields')"
+                  />
+                  attribution
+                </label>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input
+                      ng-model="include_fields.averagingPeriod"
+                      type="checkbox"
+                      ng-change="updateUrl('include_fields')"
+                  />
+                  averagingPeriod
+                </label>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input
+                      ng-model="include_fields.sourceName"
+                      type="checkbox"
+                      ng-change="updateUrl('include_fields')"
+                  />
+                  sourceName
+                </label>
+              </div>
+              
+            </div>
+          </div><!-- end form-group -->
+
+        </div><!-- end panel-body -->
+      </div><!-- end panel -->
+    </div><!-- end col-sm-4 -->
 
     <div class="col-sm-4">
       <div class="panel panel-default">
@@ -164,141 +159,11 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="coordinates" class="col-sm-4 control-label">Coordinates</label>
-            <div class="col-sm-8">
-              <input
-                  id="coordinates"
-                  ng-model="coordinates"
-                  class="form-control"
-                  placeholder="latitude,longitude"
-                  ng-change="updateUrl('coordinates')"/>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="radius" class="col-sm-4 control-label">Radius</label>
-            <div class="col-sm-8">
-              <input
-                  id="radius"
-                  ng-model="radius"
-                  class="form-control"
-                  placeholder="2500"
-                  type="number"
-                  min="0"
-                  ng-change="updateUrl('radius')"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="has_geo" class="col-sm-4 control-label">Geo Filter</label>
-            <div class="col-sm-8">
-              <select id="has_geo"
-                      class="form-control"
-                      ng-model="has_geo"
-                      ng-change="updateUrl('has_geo')">
-                <option value="">Don't filter</option>
-                <option value="true">Show records with geo info</option>
-                <option value="false">Show records without geo info</option>
-              </select>
-            </div>
-          </div>
-          
-        </div>
-      </div>
-    </div>
-
-    <div class="col-sm-4">
-      <div class="panel panel-default">
-        <div class="panel-heading">Sorting & other fields</div>
-        <div class="panel-body">
-
-          <div class="form-group">
-            <label for="order_by" class="col-sm-4 control-label">Order By</label>
-            <div class="col-sm-8">
-              <select id="order_by"
-                      class="form-control"
-                      ng-model="order_by"
-                      ng-change="updateUrl('order_by')">
-                <option value="date">Date</option>
-                <option value="value">Value</option>
-                <option value="location">Location</option>
-                <option value="country">Country</option>
-                <option value="city">City</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="sort" class="col-sm-4 control-label">In</label>
-            <div class="col-sm-8">
-              <select id="sort"
-                      class="form-control"
-                      ng-model="sort"
-                      ng-change="updateUrl('sort')">
-                <option value="desc">Descending order</option>
-                <option value="asc">Ascending order</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="" class="col-sm-4">
-              Include Fields
-            </label>
-            <div class="col-sm-8">
-              <div class="checkbox">
-                <label>
-                  <input
-                      ng-model="include_fields.attribution"
-                      type="checkbox"
-                      ng-change="updateUrl('include_fields')"
-                  />
-                  attribution
-                </label>
-              </div>
-              <div class="checkbox">
-                <label>
-                  <input
-                      ng-model="include_fields.averagingPeriod"
-                      type="checkbox"
-                      ng-change="updateUrl('include_fields')"
-                  />
-                  averagingPeriod
-                </label>
-              </div>
-              <div class="checkbox">
-                <label>
-                  <input
-                      ng-model="include_fields.sourceName"
-                      type="checkbox"
-                      ng-change="updateUrl('include_fields')"
-                  />
-                  sourceName
-                </label>
-              </div>
-              
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <div class="col-sm-12">
-      <button type="submit" class="btn btn-primary" >
-        <i class="glyphicon glyphicon-refresh"></i>
-        Fetch Data
-      </button>
-      <a href="{{ query_url }}&format=csv" title="Download as CSV file"
-         type="button" class="btn btn-default">
-        <i class="glyphicon glyphicon-download"></i>
-        Download CSV
-      </a>
-    </div>
-  </div>
+          <geo-filters></geo-filters>
+        </div><!-- end panel-body -->
+      </div><!-- end panel -->
+    </div><!-- end col-sm-4 -->
+    
+  </div><!-- end row -->
 
 </form>

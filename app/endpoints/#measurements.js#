@@ -5,50 +5,32 @@
         .module('app.endpoints')
         .controller('MeasurementsController', MeasurementsController);
 
-    function MeasurementsController($http, $scope, $log, $filter, URLService, dataService) {
+    function MeasurementsController($http, $scope, URLService, dataService) {
         var uri = URI(URLService.getUrl('measurements'));
         var params = {};
         $scope.query_url = uri.toString();
         $scope.order_by = "date";
         $scope.sort = "desc";
+        $scope.include_fields = {
+            attribution: false,
+            averagingPeriod: false,
+            sourceName: false
+        };
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
-            var urlValue = $scope[model];
-            $log.log(model);
-            if(model === "include_fields"){
-                urlValue = formatIncludeFields();
-                $log.log(urlValue);
+            if (model == 'include_fields') {
+                var urlValue = _.pickBy($scope.include_fields, function(value) {
+                    
+                })
             }
-            if(["date_from", "date_to"].indexOf(model) > -1){
-                urlValue = formatDateField(model);
-            }
-            $scope.query_url = URLService.updateUrl(uri, model, urlValue);
+            $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
             if($scope[model]) {
                 params[model] = $scope[model];
             } else {
                 delete params[model];
             }
         };
-
-        function getIncludeFields() {
-            var model = $scope.include_fields;
-            var include_fields = [];
-            for(var i = 0; i < Object.keys(model).length; i++){
-                if(model[Object.keys(model)[i]] === true){
-                    include_fields.push(Object.keys(model)[i]);
-                }
-            }
-            return include_fields;
-        }
-
-        function formatIncludeFields() {
-            return getIncludeFields().join();
-        }
-
-        function formatDateField(model) {
-            return $filter('date')($scope[model], "yyyy-MM-dd");
-        }
 
         $scope.get_locations = function() {
             var params = {};
@@ -93,10 +75,6 @@
             return dataService.measurements(params)
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.sampleResult = data.result[0];
-                    $scope.fields = Object.keys(data.results[0]);
-                    $log.log(data.results[0]);
-                    $log.log($scope.fields);
                     $scope.total = data.meta.found;
                     $scope.limit = data.meta.limit;
                     $scope.busy = 0;

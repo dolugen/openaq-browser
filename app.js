@@ -458,21 +458,6 @@
 
     angular
         .module('app.endpoints')
-        .directive('coordinatesForm', coordinatesForm);
-
-    function coordinatesForm() {
-        return {
-            'restrict': 'E',
-            'templateUrl': 'app/endpoints/coordinates-form.html',
-        };
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('app.endpoints')
         .controller('CountriesController', CountriesController);
 
     /* ngInject */
@@ -534,12 +519,12 @@
 
     angular
         .module('app.endpoints')
-        .directive('hasGeoInput', hasGeoInput);
+        .directive('geoFilters', geoFilters);
 
-    function hasGeoInput() {
+    function geoFilters() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/has-geo-input.html',
+            'templateUrl': 'app/endpoints/geo-filters.directive.html',
         };
     }
 })();
@@ -907,6 +892,21 @@
         return {
             'restrict': 'E',
             'templateUrl': 'app/endpoints/measurements-table.html',
+        };
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .directive('panelMain', panelMain);
+
+    function panelMain() {
+        return {
+            'restrict': 'E',
+            'templateUrl': 'app/endpoints/panel-main.directive.html',
         };
     }
 })();

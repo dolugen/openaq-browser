@@ -1,0 +1,65 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">Place & Parameter</div>
+  <div class="panel-body">
+    <div class="form-group">
+      <label for="country" class="col-sm-4 control-label">Country</label>
+      <div class="col-sm-8">
+        <select class="form-control"
+                id="country"
+                ng-model="country"
+                ng-change="updateUrl('country'); get_cities()">
+          <option value="">All countries</option>
+          <option ng-repeat="country in countries" value="{{ country.code }}">
+            {{ country.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="city" class="col-sm-4 control-label">City</label>
+      <div class="col-sm-8">
+        <select class="form-control"
+                id="city"
+                ng-model="city"
+                ng-change="updateUrl('city'); get_locations()">
+          <option value="">All cities</option>
+          <option ng-repeat="city in cities" value="{{ city.city }}">
+            {{ city.city }}
+          </option>
+        </select>
+      </div>    
+    </div>
+    <div class="form-group">
+      <label for="location" class="col-sm-4 control-label">Location</label>
+      <div class="col-sm-8">
+        <select class="form-control"
+                id="location"
+                ng-model="location"
+                ng-change="updateUrl('location')">
+          <option value="">All locations</option>
+          <option ng-repeat="location in locations" value="{{ location.location }}">
+            {{ location.location }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="parameter" class="col-sm-4 control-label">Parameter</label>
+      <div class="col-sm-8">
+        <select class="form-control"
+                id="parameter"
+                ng-model="parameter"
+                ng-change="updateUrl('parameter')">
+          <option value="">All parameters</option>
+          <option value="pm25">PM 2.5</option>
+          <option value="pm10">PM 10</option>
+          <option value="so2">SO₂</option>
+          <option value="no2">NO₂</option>
+          <option value="o3">O₃</option>
+          <option value="co">CO</option>
+          <option value="bc">BC</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
