@@ -1,16 +1,33 @@
 <table class="table table-striped table-bordered table-hover">
-  <th>location, city, country</th>
-  <th>parameter</th>
-  <th>value</th>
-  <th>unit</th>
-  <th>coordinates</th>
-  <th>date.local</th>
+  <tr>
+    <th>location</th>
+    <th>city, country</th>
+    <th>parameter</th>
+    <th>value</th>
+    <th>unit</th>
+    <th>coordinates</th>
+    <th>date.local</th>
+    <th ng-if="include_fields.attribution">attribution</th>
+    <th ng-if="include_fields.averagingPeriod">averagingPeriod</th>
+    <th ng-if="include_fields.sourceName">sourceName</th>
+  </tr>
   <tr ng-repeat="result in results">
-    <td>{{ result.location }}, {{ result.city }}, {{ result.country }}</td>
+    <td>{{ result.location }}</td>
+    <td>{{ result.city }}, {{ result.country }}</td>
     <td>{{ result.parameter }}</td>
     <td>{{ result.value }}</td>
     <td>{{ result.unit }}</td>
     <td>{{ result.coordinates.latitude }}, {{ result.coordinates.longitude}}</td>
     <td>{{ result.date.local | date:"yyyy MMM d, H:mm:ss" }}</td>
+    <td ng-if="include_fields.attribution">
+      <p ng-repeat="attribution in result.attribution">
+        <a ng-if="attribution.url" href="{{ attribution.url }}">{{ attribution.name }}</a>
+        <span ng-if="!attribution.url">{{ attribution.name }}</span>
+      </p>
+    </td>
+    <td ng-if="include_fields.averagingPeriod">
+      {{ result.averagingPeriod.value }} {{ result.averagingPeriod.unit }}
+    </td>
+    <td ng-if="include_fields.sourceName">{{ result.sourceName }}</td>
   </tr>
 </table>

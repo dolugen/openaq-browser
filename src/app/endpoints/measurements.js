@@ -23,7 +23,7 @@
             }
             $scope.query_url = URLService.updateUrl(uri, model, urlValue);
             if($scope[model]) {
-                params[model] = $scope[model];
+                params[model] = urlValue;
             } else {
                 delete params[model];
             }
