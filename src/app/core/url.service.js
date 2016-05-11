@@ -18,7 +18,7 @@
             if (uri.hasQuery(key)) {
                 uri.removeQuery(key);
             }
-            if (value) {
+            if (value !== null) {
                 uri.addSearch(key, value);
             }
 
