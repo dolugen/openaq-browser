@@ -1,0 +1,37 @@
+<ul ng-repeat="field in fields">
+  <li>{{ field }}</li>
+</ul>
+<table class="table table-striped table-bordered table-hover">
+  <tr>
+    <th>location</th>
+    <th>city, country</th>
+    <th>parameter</th>
+    <th>value</th>
+    <th>unit</th>
+    <th>coordinates</th>
+    <th>date.local</th>
+    <th ng-if="sampleResult.attribution">attribution</th>
+    <th ng-if="sampleResult.averagingPeriod">averagingPeriod</th>
+    <th ng-if="sampleResult.sourceName">sourceName</th>
+  </tr>
+  <tr ng-repeat="result in results">
+    <td>{{ result.location }}, {{ result.city }}, {{ result.country }}</td>
+    <td>{{ result.parameter }}</td>
+    <td>{{ result.value }}</td>
+    <td>{{ result.unit }}</td>
+    <td>{{ result.coordinates.latitude }}, {{ result.coordinates.longitude}}</td>
+    <td>{{ result.date.local | date:"yyyy MMM d, H:mm:ss" }}</td>
+    <td ng-if="sampleResult.attribution">
+      <ul ng-repeat="attribution in result.attribution">
+        <li>
+          <a ng-if="attribution.url" href="{{ attribution.url }}">{{ attribution.name }}</a>
+          <span ng-if="!attribution.url">{{ attribution.name }}</span>
+        </li>
+      </ul>
+    </td>
+    <td ng-if="sampleResult.averagingPeriod">
+      {{ result.averagingPeriod.value }} {{ result.averagingPeriod.unit }}
+    </td>
+    <td ng-if="sampleResult.sourceName">{{ result.sourceName }}</td>
+  </tr>
+</table>

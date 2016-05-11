@@ -5,35 +5,51 @@
         .module('app.endpoints')
         .controller('MeasurementsController', MeasurementsController);
 
-    function MeasurementsController($http, $scope, URLService, dataService) {
+    function MeasurementsController($http, $scope, $log, $filter, URLService, dataService) {
         var uri = URI(URLService.getUrl('measurements'));
         var params = {};
         $scope.query_url = uri.toString();
-        $scope.limit = 10;
-        $scope.page = 1;
         $scope.order_by = "date";
         $scope.sort = "desc";
         $scope.busy = 0;
 
         $scope.updateUrl = function(model) {
-            $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
-            params[model] = $scope[model];
-        };
-
-        var setDefaults = function(uri) {
-            var defaultFields = [
-                'limit',
-                'page',
-                'order_by',
-                'sort'
-            ];
-
-            for (var i in defaultFields) {
-                $scope.updateUrl(defaultFields[i]);
+            var urlValue = $scope[model];
+            $log.log(model);
+            if(model === "include_fields"){
+                urlValue = formatIncludeFields();
+                $log.log(urlValue);
+            }
+            if(["date_from", "date_to"].indexOf(model) > -1){
+                urlValue = formatDateField(model);
+            }
+            $scope.query_url = URLService.updateUrl(uri, model, urlValue);
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
             }
         };
-        setDefaults();
-        
+
+        function getIncludeFields() {
+            var model = $scope.include_fields;
+            var include_fields = [];
+            for(var i = 0; i < Object.keys(model).length; i++){
+                if(model[Object.keys(model)[i]] === true){
+                    include_fields.push(Object.keys(model)[i]);
+                }
+            }
+            return include_fields;
+        }
+
+        function formatIncludeFields() {
+            return getIncludeFields().join();
+        }
+
+        function formatDateField(model) {
+            return $filter('date')($scope[model], "yyyy-MM-dd");
+        }
+
         $scope.get_locations = function() {
             var params = {};
             if($scope.country) {
@@ -50,7 +66,9 @@
         };
 
         $scope.get_cities = function() {
-            var params = {};
+            var params = {
+                limit: 1000
+            };
             if($scope.country){
                 params.country = $scope.country;
             }
@@ -72,10 +90,14 @@
         $scope.fetch = function() {
             $scope.busy = 1;
 
-            return dataService.measurements()
+            return dataService.measurements(params)
                 .then(function(data) {
                     $scope.results = data.results;
-                    $scope.found = data.meta.found;
+                    $scope.sampleResult = data.result[0];
+                    $scope.fields = Object.keys(data.results[0]);
+                    $log.log(data.results[0]);
+                    $log.log($scope.fields);
+                    $scope.total = data.meta.found;
                     $scope.limit = data.meta.limit;
                     $scope.busy = 0;
                 });
@@ -85,27 +107,5 @@
             $scope.fetch();
         };
 
-        $scope.get_csv = function() {
-            $scope.busy = 1;
-
-            $scope.query_url += "&format=csv";
-            
-
-            $http.get($scope.query_url).success(function(data) {
-                // http://stackoverflow.com/a/31871521
-                var anchor = angular.element('<a/>');
-                anchor.css({display: 'none'}); // Make sure it's not visible
-                angular.element(document.body).append(anchor); // Attach to document
-
-                anchor.attr({
-                    href: 'data:attachment/csv;charset=utf-8,' + encodeURI(data),
-                    target: '_blank',
-                    download: 'filename.csv'
-                })[0].click();
-
-                anchor.remove(); // Clean it up afterwards
-                $scope.busy = 0;
-            });
-        };
     }
 })();
