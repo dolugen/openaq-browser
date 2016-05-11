@@ -22,6 +22,28 @@
             }
         };
 
+        function get_include_fields(model){
+            var include_fields = [];
+            for(var i = 0; i < Object.keys(model).length; i++){
+                if(model[Object.keys(model)[i]] === true){
+                    include_fields.push(Object.keys(model)[i]);
+                }
+            }
+            return include_fields;
+        }
+
+        $scope.updateIncludeFields = function() {
+            // a special case for include_fields
+            var model = 'include_fields';
+            var include_fields = get_include_fields($scope.include_fields).join();
+            $scope.query_url = URLService.updateUrl(uri, model, include_fields);
+            if($scope[model]) {
+                params[model] = include_fields;
+            } else {
+                delete params[model];
+            }
+        };
+
         $scope.get_locations = function() {
             var params = {};
             if($scope.country) {

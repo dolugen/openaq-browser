@@ -248,7 +248,7 @@
                   <input
                       ng-model="include_fields.attribution"
                       type="checkbox"
-                      ng-change="updateUrl('include_fields')"
+                      ng-change="updateIncludeFields()"
                   />
                   attribution
                 </label>
@@ -258,7 +258,7 @@
                   <input
                       ng-model="include_fields.averagingPeriod"
                       type="checkbox"
-                      ng-change="updateUrl('include_fields')"
+                      ng-change="updateIncludeFields()"
                   />
                   averagingPeriod
                 </label>
@@ -268,13 +268,11 @@
                   <input
                       ng-model="include_fields.sourceName"
                       type="checkbox"
-                      ng-change="updateUrl('include_fields')"
+                      ng-change="updateIncludeFields()"
                   />
                   sourceName
                 </label>
               </div>
-
-              {{ include_fields }}
               
             </div>
           </div>
