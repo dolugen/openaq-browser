@@ -3,12 +3,12 @@
 
     angular
         .module('app.endpoints')
-        .directive('hasGeoInput', hasGeoInput);
+        .directive('geoFilters', geoFilters);
 
-    function hasGeoInput() {
+    function geoFilters() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/has-geo-input.html',
+            'templateUrl': 'app/endpoints/geo-filters.directive.html',
         };
     }
 })();
