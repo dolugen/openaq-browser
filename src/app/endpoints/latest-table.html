@@ -1,14 +1,31 @@
 <table 
-   class="table table-striped table-bordered table-hover"
-   ng-hide="busy">
-  <th>location</th>
-  <th>country</th>
-  <th>city</th>
-  <th>measurements</th>
+    class="table table-striped table-bordered table-hover"
+    ng-hide="busy">
+  <tr>
+    <th rowspan="2">location</th>
+    <th rowspan="2">country</th>
+    <th rowspan="2">city</th>
+    <th colspan="4">measurements</th>
+  </tr>
+  <tr>
+    <th>parameter</th>
+    <th>value</th>
+    <th>unit</th>
+    <th>lastUpdated</th>
+  </tr>
   <tr ng-repeat="result in results">
     <td>{{ result.location }}</td>
     <td>{{ result.country }}</td>
     <td>{{ result.city }}</td>
-    <td>{{ result.measurements }}</td>
+    <td colspan="4">
+      <table class="table table-bordered">
+        <tr ng-repeat="measurement in result.measurements">
+          <td>{{ measurement.parameter }}</td>
+          <td>{{ measurement.value }}</td>
+          <td>{{ measurement.unit }}</td>
+          <td>{{ measurement.lastUpdated }}</td>
+        </tr>
+      </table>
+    </td>
   </tr>
 </table>
