@@ -15,6 +15,10 @@
                 templateUrl: 'app/endpoints/countries.html',
                 controller: 'CountriesController'
             })
+            .when('/fetches', {
+                templateUrl: 'app/endpoints/fetches.html',
+                controller: 'FetchesController',
+            })
             .when('/latest', {
                 templateUrl: 'app/endpoints/latest.html',
                 controller: 'LatestController'

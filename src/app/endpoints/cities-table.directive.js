@@ -8,7 +8,7 @@
     function citiesTable() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/cities-table.html',
+            'templateUrl': 'app/endpoints/cities-table.directive.html',
         };
     }
 })();

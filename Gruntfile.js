@@ -163,7 +163,7 @@ module.exports = function(grunt) {
                 'src/assets/css/*',
                 'test/*'
             ],
-            tasks: ['build', 'karma:unit:run'],
+            tasks: ['karma:unit:run'],
             options: {
                 spawn: false,
                 interval: 1000
@@ -173,8 +173,8 @@ module.exports = function(grunt) {
             bsFiles: {
                 src: [
                     'Gruntfile.js',
-                    'dist/*,',
-                    'dist/app/**/*'
+                    'src/*',
+                    'src/app/**/*'
                 ]
             },
             options: {

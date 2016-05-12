@@ -3,10 +3,10 @@
 
     angular
         .module('app.endpoints')
-        .controller('CitiesController', CitiesController);
+        .controller('FetchesController', FetchesController);
 
-    function CitiesController($http, $scope, URLService, dataService) {
-        var uri = URI(URLService.getUrl('cities'));
+    function FetchesController($http, $scope, URLService, dataService) {
+        var uri = URI(URLService.getUrl('fetches'));
         var params = {};
         $scope.query_url = uri.toString();
         $scope.busy = 0;
@@ -20,18 +20,10 @@
             }
         };
 
-        $scope.get_countries = function() {
-            return dataService.countries()
-                .then(function(data) {
-                    $scope.countries = data.results;
-                });
-        };
-        $scope.get_countries();
-
         $scope.fetch = function() {
             $scope.busy = 1;
 
-            return dataService.cities(params)
+            return dataService.fetches(params)
                 .then(function(data) {
                     $scope.results = data.results;
                     $scope.total = data.meta.found;

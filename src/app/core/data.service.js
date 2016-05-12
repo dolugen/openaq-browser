@@ -5,7 +5,7 @@
         .module('app.core')
         .service('dataService', dataService);
 
-    function dataService($q, $http, $log, constant, ENDPOINTS) {
+    function dataService($q, $http, $log, constant) {
         var apiRoot = constant.API_HOST;
 
         var service = {

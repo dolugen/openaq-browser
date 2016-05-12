@@ -32,6 +32,7 @@
       <ul class="nav navbar-nav" ng-controller="NavController">
         <li ng-class="{ active: urlLocation.path() == '/cities' }" ng-click="isActive('/cities')"><a href="#/cities">Cities</a></li>
         <li ng-class="{ active: urlLocation.path() == '/countries' }" ng-click="isActive('/countries')"><a href="#/countries">Countries</a></li>
+        <li ng-class="{ active: urlLocation.path() == '/fetches' }" ng-click="isActive('/fetches')"><a href="#/fetches">Fetches</a></li>
         <li ng-class="{ active: urlLocation.path() == '/latest' }" ng-click="isActive('/latest')"><a href="#/latest">Latest</a></li>
         <li ng-class="{ active: urlLocation.path() == '/locations' }" ng-click="isActive('/locations')"><a href="#/locations">Locations</a></li>
         <li ng-class="{ active: urlLocation.path() == '/measurements' }"><a href="#/measurements">Measurements</a></li>
@@ -91,6 +92,7 @@
   <script src="/app/core/url.service.js"></script>
   <script src="/app/core/data.service.js"></script>
   <script src="/app/core/date.factory.js"></script>
+  <script src="/app/core/storage.service.js"></script>
   <script src="/app/core/nav.js"></script>
   <script src="/app/core/404.route.js"></script>
   <script src="/app/core/about.route.js"></script>
@@ -103,6 +105,9 @@
   <script src="/app/endpoints/cities-form.directive.js"></script>
   <script src="/app/endpoints/countries.js"></script>
   <script src="/app/endpoints/countries.directive.js"></script>
+  <script src="/app/endpoints/fetches.js"></script>
+  <script src="/app/endpoints/fetches-form.directive.js"></script>
+  <script src="/app/endpoints/fetches-table.directive.js"></script>
   <script src="/app/endpoints/geo-filters.directive.js"></script>
   <script src="/app/endpoints/latest.js"></script>
   <script src="/app/endpoints/latest-table.directive.js"></script>

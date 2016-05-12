@@ -6,6 +6,7 @@
   "scripts": {
     "start": "grunt serve",
     "test": "grunt karma:continuous",
+    "pretest": "grunt build",
     "postinstall": "bower install"
   },
   "repository": {
