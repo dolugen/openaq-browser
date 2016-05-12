@@ -4,14 +4,16 @@
     angular
         .module('app.core')
         .constant('constant', {
-            API_HOST: "https://api.openaq.org/v1/"
-        })
-        .constant('ENDPOINTS', [
-            'cities',
-            'countries',
-            'latest',
-            'locations',
-            'measurements'
-        ]);
-
+            API_HOST: "https://api.openaq.org/v1/",
+            API_ENDPOINTS: [
+                'cities',
+                'countries',
+                'fetches',
+                'latest',
+                'locations',
+                'measurements',
+                'sources'
+            ]
+        });
+                 
 })();

@@ -5,7 +5,7 @@
         .module('app.endpoints')
         .controller('CitiesController', CitiesController);
 
-    function CitiesController($http, $log, $scope, URLService, dataService) {
+    function CitiesController($http, $scope, URLService, dataService) {
         var uri = URI(URLService.getUrl('cities'));
         var params = {};
         $scope.query_url = uri.toString();

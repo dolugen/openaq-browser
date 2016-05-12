@@ -37,16 +37,18 @@
     angular
         .module('app.core')
         .constant('constant', {
-            API_HOST: "https://api.openaq.org/v1/"
-        })
-        .constant('ENDPOINTS', [
-            'cities',
-            'countries',
-            'latest',
-            'locations',
-            'measurements'
-        ]);
-
+            API_HOST: "https://api.openaq.org/v1/",
+            API_ENDPOINTS: [
+                'cities',
+                'countries',
+                'fetches',
+                'latest',
+                'locations',
+                'measurements',
+                'sources'
+            ]
+        });
+                 
 })();
 
 (function() {
@@ -105,8 +107,7 @@
         this.getUrl = function(name) {
             if (name === undefined) { throw new Error('API endpoint required.'); }
             var apiRoot = constant.API_HOST;
-            var availablePoints = ['cities', 'countries', 'latest', 'locations', 'measurements'];
-            if (availablePoints.indexOf(name) < 0) { throw new Error('API endpoint unavailable.'); }
+            if (constant.API_ENDPOINTS.indexOf(name) < 0) { throw new Error('API endpoint unavailable.'); }
             return apiRoot + name;
         };
 
@@ -131,16 +132,17 @@
         .module('app.core')
         .service('dataService', dataService);
 
-    function dataService($q, $http, $log, constant, ENDPOINTS) {
+    function dataService($q, $http, $log, constant) {
         var apiRoot = constant.API_HOST;
 
         var service = {
-            locations: locations,
-            latest: latest,
-            measurements: measurements,
             cities: cities,
             countries: countries,
-            fetches: fetches
+            fetches: fetches,
+            latest: latest,
+            locations: locations,
+            measurements: measurements,
+            sources: sources
         };
 
         return service;
@@ -159,28 +161,32 @@
                 });
         }
 
-        function locations(params) {
-            return get('locations', params, { timeout: 10*1000, cache: true });
-        }
-
-        function latest(params) {
-            return get('latest', params);
-        }
-
-        function fetches(params) {
-            return get('fetches', params);
-        }
-
-        function measurements(params) {
-            return get('measurements', params);
-        }
-
         function cities(params) {
             return get('cities', params, { timeout: 10*1000, cache: true });
         }
 
         function countries(params) {
             return get('countries', params, { timeout: 10*1000, cache: true });
+        }
+
+        function fetches(params) {
+            return get('fetches', params);
+        }
+
+        function latest(params) {
+            return get('latest', params);
+        }
+
+        function locations(params) {
+            return get('locations', params, { timeout: 10*1000, cache: true });
+        }
+        
+        function measurements(params) {
+            return get('measurements', params);
+        }
+
+        function sources(params) {
+            return get('sources', params, { timeout: 10*1000, cache: true });
         }
 
     }
@@ -358,6 +364,10 @@
                 templateUrl: 'app/endpoints/countries.html',
                 controller: 'CountriesController'
             })
+            .when('/fetches', {
+                templateUrl: 'app/endpoints/fetches.html',
+                controller: 'FetchesController',
+            })
             .when('/latest', {
                 templateUrl: 'app/endpoints/latest.html',
                 controller: 'LatestController'
@@ -369,6 +379,10 @@
             .when('/measurements', {
                 templateUrl: 'app/endpoints/measurements.html',
                 controller: 'MeasurementsController'
+            })
+            .when('/sources', {
+                templateUrl: 'app/endpoints/sources.html',
+                controller: 'SourcesController'
             });
     }
 
@@ -381,7 +395,7 @@
         .module('app.endpoints')
         .controller('CitiesController', CitiesController);
 
-    function CitiesController($http, $log, $scope, URLService, dataService) {
+    function CitiesController($http, $scope, URLService, dataService) {
         var uri = URI(URLService.getUrl('cities'));
         var params = {};
         $scope.query_url = uri.toString();
@@ -433,7 +447,7 @@
     function citiesTable() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/cities-table.html',
+            'templateUrl': 'app/endpoints/cities-table.directive.html',
         };
     }
 })();
@@ -448,7 +462,7 @@
     function citiesForm() {
         return {
             'restrict': 'E',
-            'templateUrl': 'app/endpoints/cities-form.html',
+            'templateUrl': 'app/endpoints/cities-form.directive.html',
         };
     }
 })();
@@ -513,6 +527,77 @@
 
 })();
 
+
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .controller('FetchesController', FetchesController);
+
+    function FetchesController($http, $scope, URLService, dataService) {
+        var uri = URI(URLService.getUrl('fetches'));
+        var params = {};
+        $scope.query_url = uri.toString();
+        $scope.busy = 0;
+
+        $scope.updateUrl = function(model) {
+            $scope.query_url = URLService.updateUrl(uri, model, $scope[model]);
+            if($scope[model]) {
+                params[model] = $scope[model];
+            } else {
+                delete params[model];
+            }
+        };
+
+        $scope.fetch = function() {
+            $scope.busy = 1;
+
+            return dataService.fetches(params)
+                .then(function(data) {
+                    $scope.results = data.results;
+                    $scope.total = data.meta.found;
+                    $scope.busy = 0;
+                });
+        };
+
+        $scope.submit = function() {
+            $scope.fetch();
+        };
+
+    }
+
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .directive('fetchesForm', fetchesForm);
+
+    function fetchesForm() {
+        return {
+            'restrict': 'E',
+            'templateUrl': 'app/endpoints/fetches-form.directive.html',
+        };
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .directive('fetchesTable', fetchesTable);
+
+    function fetchesTable() {
+        return {
+            'restrict': 'E',
+            'templateUrl': 'app/endpoints/fetches-table.directive.html',
+        };
+    }
+})();
 
 (function() {
     'use strict';
@@ -909,6 +994,36 @@
             'templateUrl': 'app/endpoints/panel-main.directive.html',
         };
     }
+})();
+
+ (function() {
+    'use strict';
+
+    angular
+        .module('app.endpoints')
+        .controller('SourcesController', SourcesController);
+
+    function SourcesController($http, $scope, URLService, dataService) {
+        var uri = URI(URLService.getUrl('sources'));
+        var params = {};
+        $scope.query_url = uri.toString();
+        $scope.busy = 0;
+
+        $scope.fetch = function() {
+            $scope.busy = 1;
+
+            return dataService.sources(params)
+                .then(function(data) {
+                    $scope.results = data.results;
+                    $scope.total = data.meta.found;
+                    $scope.busy = 0;
+                });
+        };
+
+        $scope.fetch();
+
+    }
+
 })();
 
 (function() {

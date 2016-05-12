@@ -9,8 +9,7 @@
         this.getUrl = function(name) {
             if (name === undefined) { throw new Error('API endpoint required.'); }
             var apiRoot = constant.API_HOST;
-            var availablePoints = ['cities', 'countries', 'latest', 'locations', 'measurements'];
-            if (availablePoints.indexOf(name) < 0) { throw new Error('API endpoint unavailable.'); }
+            if (constant.API_ENDPOINTS.indexOf(name) < 0) { throw new Error('API endpoint unavailable.'); }
             return apiRoot + name;
         };
 

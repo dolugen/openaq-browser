@@ -1,0 +1,41 @@
+<div>
+  <form class="form-horizontal" ng-submit="submit()">
+    <div class="col-sm-12">
+      <form-query-url></form-query-url>
+    </div>
+    
+  </form>
+
+  <p ng-show="busy">Fetching...</p>
+  <p ng-show="results">Showing {{ results.length }} of {{ total }} sources</p>
+
+  <table ng-show="results" class="table table-striped table-bordered">
+    <tr>
+      <th>name</th>
+      <th>url</th>
+      <th>adapter</th>
+      <th>city</th>
+      <th>country</th>
+      <th>description</th>
+      <th>resolution</th>
+      <th>sourceURL</th>
+      <th>contacts</th>
+    </tr>
+    <tr ng-repeat="result in results">
+      <td>{{ result.name }}
+      <td><a href="{{ result.url }}">url</a></td>
+      <td>{{ result.adapter }}</td>
+      <td>{{ result.city }}</td>
+      <td>{{ result.country }}</td>
+      <td>{{ result.description }}</td>
+      <td>{{ result.resolution }}</td>
+      <td><a href="{{ result.sourceURL }}">sourceURL</a></td>
+      <td>
+        <ul ng-repeat="contact in result.contacts" class="list-unstyled">
+          <li>{{ contact }}</li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+  
+</div>

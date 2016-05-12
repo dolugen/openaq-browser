@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>OpenAQ Browser</title>
   <link rel="shortcut icon" href="assets/favicon.ico">
-  <link rel="stylesheet" href="css/style.css" type="text/css" />
+  <link rel="stylesheet" href="style.min.css"/>
 
 </head>
 
@@ -26,9 +26,11 @@
       <ul class="nav navbar-nav" ng-controller="NavController">
         <li ng-class="{ active: urlLocation.path() == '/cities' }" ng-click="isActive('/cities')"><a href="#/cities">Cities</a></li>
         <li ng-class="{ active: urlLocation.path() == '/countries' }" ng-click="isActive('/countries')"><a href="#/countries">Countries</a></li>
+        <li ng-class="{ active: urlLocation.path() == '/fetches' }" ng-click="isActive('/fetches')"><a href="#/fetches">Fetches</a></li>
         <li ng-class="{ active: urlLocation.path() == '/latest' }" ng-click="isActive('/latest')"><a href="#/latest">Latest</a></li>
         <li ng-class="{ active: urlLocation.path() == '/locations' }" ng-click="isActive('/locations')"><a href="#/locations">Locations</a></li>
         <li ng-class="{ active: urlLocation.path() == '/measurements' }"><a href="#/measurements">Measurements</a></li>
+        <li ng-class="{ active: urlLocation.path() == '/sources' }"><a href="#/sources">Sources</a></li>
         <li ng-class="{ active: urlLocation.path() == '/graph' }"><a href="#/graph">Graph</a></li>
       </ul>
       <div class="nav navbar-nav navbar-right hidden-sm">
@@ -58,7 +60,8 @@
     </div>
   </footer>
 
-  <script src="deps.js"></script>
+  <script src="bower.min.js"></script>
+
   <script src="app.js"></script>
 </body>
 </html>

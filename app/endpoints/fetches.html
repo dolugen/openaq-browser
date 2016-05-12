@@ -1,0 +1,6 @@
+<div>
+  <fetches-form></fetches-form>
+  <p ng-show="busy">Fetching...</p>
+  <p ng-show="results">Showing {{ results.length }} of {{ total }} fetches</p>
+  <fetches-table ng-show="results"></fetches-table>
+</div>
