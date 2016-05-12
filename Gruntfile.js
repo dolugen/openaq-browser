@@ -20,7 +20,7 @@ module.exports = function(grunt) {
                     'src/bower_components/ui-leaflet/dist/ui-leaflet.min.js',
                     'src/bower_components/urijs/src/URI.min.js'
                 ],
-                dest: 'dist/deps.js',
+                dest: 'dist/bower.js',
                 nonull: true
             },
             css: {
@@ -56,6 +56,9 @@ module.exports = function(grunt) {
                     "src/app/endpoints/cities-form.directive.js",
                     "src/app/endpoints/countries.js",
                     "src/app/endpoints/countries.directive.js",
+                    "src/app/endpoints/fetches.js",
+                    "src/app/endpoints/fetches-form.directive.js",
+                    "src/app/endpoints/fetches-table.directive.js",
                     "src/app/endpoints/geo-filters.directive.js",
                     "src/app/endpoints/latest.js",
                     "src/app/endpoints/latest-table.directive.js",
@@ -67,6 +70,7 @@ module.exports = function(grunt) {
                     "src/app/endpoints/measurements-form.directive.js",
                     "src/app/endpoints/measurements-table.directive.js",
                     "src/app/endpoints/panel-main.directive.js",
+                    "src/app/endpoints/sources.js",
                     "src/app/graph/graph.module.js",
                     "src/app/graph/graph.route.js",
                     "src/app/graph/graph.js",
@@ -80,14 +84,14 @@ module.exports = function(grunt) {
                     {
                         expand: true,
                         dot: true,
-                        cwd: 'node_modules/bootstrap/dist',
+                        cwd: 'src/bower_components/bootstrap/dist',
                         src: ['fonts/*.*'],
                         dest: 'dist'
                     },
                     {
                         expand: true,
                         dot: true,
-                        cwd: 'node_modules/bootstrap/dist/',
+                        cwd: 'src/bower_components/bootstrap/dist/',
                         src: ['css/bootstrap.min.css.map'],
                         dest: 'dist'
                     },
@@ -150,9 +154,16 @@ module.exports = function(grunt) {
                     compress: true
                 },
                 files: {
-                    'dist/deps.min.js': 'dist/deps.js'
+                    'dist/bower.min.js': 'dist/bower.js',
                 }
             }
+        },
+        cssmin: {
+            target: {
+                files: {
+                    'dist/style.min.css': 'dist/style.css'
+                }
+            }  
         },
         watch: {
             files: [
@@ -199,10 +210,11 @@ module.exports = function(grunt) {
             }
         }
     });
-
+    
     grunt.loadNpmTasks('grunt-browser-sync');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-watch');
@@ -219,9 +231,9 @@ module.exports = function(grunt) {
     grunt.registerTask('build', [
         'jshint',
         'copy',
-        'concat:bower',
-        'concat:js',
-        'concat:css',
+        'concat',
+        'uglify',
+        'cssmin',
         'processhtml'
     ]);
     grunt.registerTask('deploy', [
