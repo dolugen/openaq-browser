@@ -6,8 +6,7 @@
   "scripts": {
     "start": "grunt serve",
     "test": "grunt karma:continuous",
-    "pretest": "grunt build",
-    "postinstall": "grunt build"
+    "postinstall": "bower install"
   },
   "repository": {
     "type": "git",
@@ -23,19 +22,6 @@
   },
   "homepage": "https://github.com/dolugen/openaq-browser",
   "private": true,
-  "dependencies": {
-    "angucomplete-alt": "~2.1.0",
-    "angular": "~1.4.7",
-    "angular-route": "~1.4.7",
-    "angular-simple-logger": "^0.1.5",
-    "bootstrap": "~3.3.5",
-    "c3": "~0.4.10",
-    "jquery": "~2.1.4",
-    "lodash": "~3.10.1",
-    "moment": "^2.12.0",
-    "ui-leaflet": "~1.0.0",
-    "urijs": "~1.17.0"
-  },
   "devDependencies": {
     "angular-mocks": "~1.4.8",
     "grunt": "^0.4.5",

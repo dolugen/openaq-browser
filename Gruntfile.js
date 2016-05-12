@@ -4,34 +4,34 @@ module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         concat: {
-            node: {
+            bower: {
                 src: [
-                    'node_modules/jquery/dist/jquery.min.js',
-                    'node_modules/angular/angular.min.js',
-                    'node_modules/angular-route/angular-route.min.js',
-                    'node_modules/angular-simple-logger/dist/angular-simple-logger.min.js',
-                    'node_modules/angucomplete-alt/dist/angucomplete-alt.min.js',
-                    'node_modules/bootstrap/dist/js/bootstrap.min.js',
-                    'node_modules/c3/c3.min.js',
-                    'node_modules/d3/d3.min.js',
-                    'node_modules/leaflet/dist/leaflet.js',
-                    'node_modules/lodash/index.js',
-                    'node_modules/moment/min/moment.min.js',
-                    'node_modules/ui-leaflet/dist/ui-leaflet.min.js',
-                    'node_modules/urijs/src/URI.min.js'
+                    'src/bower_components/jquery/dist/jquery.min.js',
+                    'src/bower_components/angular/angular.min.js',
+                    'src/bower_components/angular-route/angular-route.min.js',
+                    'src/bower_components/angular-simple-logger/dist/angular-simple-logger.min.js',
+                    'src/bower_components/angucomplete-alt/dist/angucomplete-alt.min.js',
+                    'src/bower_components/bootstrap/dist/js/bootstrap.min.js',
+                    'src/bower_components/c3/c3.min.js',
+                    'src/bower_components/d3/d3.min.js',
+                    'src/bower_components/leaflet/dist/leaflet.js',
+                    'src/bower_components/lodash/lodash.min.js',
+                    'src/bower_components/moment/min/moment.min.js',
+                    'src/bower_components/ui-leaflet/dist/ui-leaflet.min.js',
+                    'src/bower_components/urijs/src/URI.min.js'
                 ],
                 dest: 'dist/deps.js',
                 nonull: true
             },
             css: {
                 src: [
-                    'node_modules/angucomplete-alt/angucomplete-alt.css',
-                    'node_modules/bootstrap/dist/css/bootstrap.min.css',
-                    'node_modules/c3/c3.min.css',
-                    'node_modules/leaflet/dist/leaflet.css',
+                    'src/bower_components/angucomplete-alt/angucomplete-alt.css',
+                    'src/bower_components/bootstrap/dist/css/bootstrap.min.css',
+                    'src/bower_components/c3/c3.min.css',
+                    'src/bower_components/leaflet/dist/leaflet.css',
                     'src/assets/css/style.css'
                 ],
-                dest: 'dist/css/style.css'
+                dest: 'dist/style.css'
             },
             js: {
                 src: [
@@ -181,7 +181,7 @@ module.exports = function(grunt) {
                 logLevel: "silent",
                 watchTask: true,
                 server: {
-                    baseDir: "./dist",
+                    baseDir: "./src",
                     index: "index.html"
                 }
             }
@@ -219,10 +219,10 @@ module.exports = function(grunt) {
     grunt.registerTask('build', [
         'jshint',
         'copy',
-        'concat:node',
+        'concat:bower',
         'concat:js',
         'concat:css',
-        'processhtml',
+        'processhtml'
     ]);
     grunt.registerTask('deploy', [
         'build',

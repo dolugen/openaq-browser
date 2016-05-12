@@ -4,7 +4,13 @@
   <meta charset="utf-8">
   <title>OpenAQ Browser</title>
   <link rel="shortcut icon" href="assets/favicon.ico">
-  <link rel="stylesheet" href="css/style.css" type="text/css" />
+  <!-- build:css style.css -->
+  <link rel="stylesheet" href="/bower_components/angucomplete-alt/angucomplete-alt.css" type="text/css" />
+  <link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" type="text/css" />
+  <link rel="stylesheet" href="/bower_components/c3/c3.min.css" type="text/css" />
+  <link rel="stylesheet" href="/bower_components/leaflet/dist/leaflet.css" type="text/css" />
+  <link rel="stylesheet" href="/assets/css/style.css" type="text/css" />
+  <!-- /build -->
 
 </head>
 
@@ -58,7 +64,22 @@
     </div>
   </footer>
 
-  <script src="deps.js"></script>
+  <!-- build:js deps.js -->
+  <script src='/bower_components/jquery/dist/jquery.min.js'></script>
+  <script src='/bower_components/angular/angular.min.js'></script>
+  <script src='/bower_components/angular-route/angular-route.min.js'></script>
+  <script src='/bower_components/angular-simple-logger/dist/angular-simple-logger.min.js'></script>
+  <script src='/bower_components/angucomplete-alt/dist/angucomplete-alt.min.js'></script>
+  <script src='/bower_components/bootstrap/dist/js/bootstrap.min.js'></script>
+  <script src='/bower_components/c3/c3.min.js'></script>
+  <script src='/bower_components/d3/d3.min.js'></script>
+  <script src='/bower_components/leaflet/dist/leaflet.js'></script>
+  <script src='/bower_components/lodash/lodash.min.js'></script>
+  <script src='/bower_components/moment/min/moment.min.js'></script>
+  <script src='/bower_components/ui-leaflet/dist/ui-leaflet.min.js'></script>
+  <script src='/bower_components/urijs/src/URI.min.js'>  </script>
+  <!-- /build -->
+
   <!-- build:js app.js -->
   <script src="/app/app.module.js"></script>
 
