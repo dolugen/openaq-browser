@@ -31,7 +31,7 @@ module.exports = function(grunt) {
                     'src/bower_components/leaflet/dist/leaflet.css',
                     'src/assets/css/style.css'
                 ],
-                dest: 'dist/style.css'
+                dest: 'dist/css/style.css'
             },
             js: {
                 src: [
@@ -161,7 +161,7 @@ module.exports = function(grunt) {
         cssmin: {
             target: {
                 files: {
-                    'dist/style.min.css': 'dist/style.css'
+                    'dist/css/style.min.css': 'dist/css/style.css'
                 }
             }  
         },
