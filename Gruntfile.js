@@ -70,6 +70,7 @@ module.exports = function(grunt) {
                     "src/app/endpoints/measurements-form.directive.js",
                     "src/app/endpoints/measurements-table.directive.js",
                     "src/app/endpoints/panel-main.directive.js",
+                    "src/app/endpoints/parameters.js",
                     "src/app/endpoints/sources.js",
                     "src/app/graph/graph.module.js",
                     "src/app/graph/graph.route.js",
