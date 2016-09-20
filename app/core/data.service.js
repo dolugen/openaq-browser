@@ -15,6 +15,7 @@
             latest: latest,
             locations: locations,
             measurements: measurements,
+            parameters: parameters,
             sources: sources
         };
 
@@ -56,6 +57,10 @@
         
         function measurements(params) {
             return get('measurements', params);
+        }
+
+        function parameters(params) {
+            return get('parameters', params, { timeout: 10*1000, cache: true});
         }
 
         function sources(params) {

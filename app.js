@@ -45,6 +45,7 @@
                 'latest',
                 'locations',
                 'measurements',
+                'parameters',
                 'sources'
             ]
         });
@@ -142,6 +143,7 @@
             latest: latest,
             locations: locations,
             measurements: measurements,
+            parameters: parameters,
             sources: sources
         };
 
@@ -183,6 +185,10 @@
         
         function measurements(params) {
             return get('measurements', params);
+        }
+
+        function parameters(params) {
+            return get('parameters', params, { timeout: 10*1000, cache: true});
         }
 
         function sources(params) {
@@ -379,6 +385,10 @@
             .when('/measurements', {
                 templateUrl: 'app/endpoints/measurements.html',
                 controller: 'MeasurementsController'
+            })
+            .when('/parameters', {
+                templateUrl: 'app/endpoints/parameters.html',
+                controller: 'ParametersController'
             })
             .when('/sources', {
                 templateUrl: 'app/endpoints/sources.html',

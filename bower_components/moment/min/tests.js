@@ -141,14 +141,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -165,7 +166,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -277,7 +278,7 @@
     localeModule('af');
 
     test('parse', function (assert) {
-        var tests = 'Januarie Jan_Februarie Feb_Maart Mar_April Apr_Mei Mei_Junie Jun_Julie Jul_Augustus Aug_September Sep_Oktober Okt_November Nov_Desember Des'.split('_'), i;
+        var tests = 'Januarie Jan_Februarie Feb_Maart Mrt_April Apr_Mei Mei_Junie Jun_Julie Jul_Augustus Aug_September Sep_Oktober Okt_November Nov_Desember Des'.split('_'), i;
         function equalTest(input, mmm, i) {
             assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
         }
@@ -366,7 +367,7 @@
     });
 
     test('format month', function (assert) {
-        var expected = 'Januarie Jan_Februarie Feb_Maart Mar_April Apr_Mei Mei_Junie Jun_Julie Jul_Augustus Aug_September Sep_Oktober Okt_November Nov_Desember Des'.split('_'), i;
+        var expected = 'Januarie Jan_Februarie Feb_Maart Mrt_April Apr_Mei Mei_Junie Jun_Julie Jul_Augustus Aug_September Sep_Oktober Okt_November Nov_Desember Des'.split('_'), i;
         for (i = 0; i < expected.length; i++) {
             assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
         }
@@ -626,14 +627,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -650,7 +652,526 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
+                tester('dd');
+                tester('ddd');
+                tester('dddd');
+            }
+        });
+    }
+
+    function setupDeprecationHandler(test, moment, scope) {
+        test._expectedDeprecations = null;
+        test._observedDeprecations = null;
+        test._oldSupress = moment.suppressDeprecationWarnings;
+        moment.suppressDeprecationWarnings = true;
+        test.expectedDeprecations = function () {
+            test._expectedDeprecations = arguments;
+            test._observedDeprecations = [];
+        };
+        moment.deprecationHandler = function (name, msg) {
+            var deprecationId = matchedDeprecation(name, msg, test._expectedDeprecations);
+            if (deprecationId === -1) {
+                throw new Error('Unexpected deprecation thrown name=' +
+                        name + ' msg=' + msg);
+            }
+            test._observedDeprecations[deprecationId] = 1;
+        };
+    }
+
+    function teardownDeprecationHandler(test, moment, scope) {
+        moment.suppressDeprecationWarnings = test._oldSupress;
+
+        if (test._expectedDeprecations != null) {
+            var missedDeprecations = [];
+            each(test._expectedDeprecations, function (deprecationPattern, id) {
+                if (test._observedDeprecations[id] !== 1) {
+                    missedDeprecations.push(deprecationPattern);
+                }
+            });
+            if (missedDeprecations.length !== 0) {
+                throw new Error('Expected deprecation warnings did not happen: ' +
+                        missedDeprecations.join(' '));
+            }
+        }
+    }
+
+    function matchedDeprecation(name, msg, deprecations) {
+        if (deprecations == null) {
+            return -1;
+        }
+        for (var i = 0; i < deprecations.length; ++i) {
+            if (name != null && name === deprecations[i]) {
+                return i;
+            }
+            if (msg != null && msg.substring(0, deprecations[i].length) === deprecations[i]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /*global QUnit:false*/
+
+    var test = QUnit.test;
+
+    var expect = QUnit.expect;
+
+    function module (name, lifecycle) {
+        QUnit.module(name, {
+            setup : function () {
+                moment.locale('en');
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                teardownDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+    }
+
+    function localeModule (name, lifecycle) {
+        QUnit.module('locale:' + name, {
+            setup : function () {
+                moment.locale(name);
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                moment.locale('en');
+                teardownDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+        defineCommonLocaleTests(name, -1, -1);
+    }
+
+    localeModule('ar-ly');
+
+    var months = [
+        'يناير',
+        'فبراير',
+        'مارس',
+        'أبريل',
+        'مايو',
+        'يونيو',
+        'يوليو',
+        'أغسطس',
+        'سبتمبر',
+        'أكتوبر',
+        'نوفمبر',
+        'ديسمبر'
+    ];
+
+    test('parse', function (assert) {
+        var tests = months, i;
+        function equalTest(input, mmm, i) {
+            assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1) + ' instead is month ' + moment(input, mmm).month());
+        }
+        for (i = 0; i < 12; i++) {
+            equalTest(tests[i], 'MMM', i);
+            equalTest(tests[i], 'MMM', i);
+            equalTest(tests[i], 'MMMM', i);
+            equalTest(tests[i], 'MMMM', i);
+            equalTest(tests[i].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i].toLocaleUpperCase(), 'MMMM', i);
+            equalTest(tests[i].toLocaleUpperCase(), 'MMMM', i);
+        }
+    });
+
+    test('format', function (assert) {
+        var a = [
+                ['dddd, MMMM Do YYYY, h:mm:ss a',      'الأحد، فبراير 14 2010، 3:25:50 م'],
+                ['ddd, hA',                            'أحد، 3م'],
+                ['M Mo MM MMMM MMM',                   '2 2 02 فبراير فبراير'],
+                ['YYYY YY',                            '2010 10'],
+                ['D Do DD',                            '14 14 14'],
+                ['d do dddd ddd dd',                   '0 0 الأحد أحد ح'],
+                ['DDD DDDo DDDD',                      '45 45 045'],
+                ['w wo ww',                            '8 8 08'],
+                ['h hh',                               '3 03'],
+                ['H HH',                               '15 15'],
+                ['m mm',                               '25 25'],
+                ['s ss',                               '50 50'],
+                ['a A',                                'م م'],
+                ['[the] DDDo [day of the year]',       'the 45 day of the year'],
+                ['LT',                                 '15:25'],
+                ['LTS',                                '15:25:50'],
+                ['L',                                  '14/\u200f2/\u200f2010'],
+                ['LL',                                 '14 فبراير 2010'],
+                ['LLL',                                '14 فبراير 2010 15:25'],
+                ['LLLL',                               'الأحد 14 فبراير 2010 15:25'],
+                ['l',                                  '14/\u200f2/\u200f2010'],
+                ['ll',                                 '14 فبراير 2010'],
+                ['lll',                                '14 فبراير 2010 15:25'],
+                ['llll',                               'أحد 14 فبراير 2010 15:25']
+            ],
+            b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
+            i;
+        for (i = 0; i < a.length; i++) {
+            assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        }
+    });
+
+    test('format ordinal', function (assert) {
+        assert.equal(moment([2011, 0, 1]).format('DDDo'), '1', '1');
+        assert.equal(moment([2011, 0, 2]).format('DDDo'), '2', '2');
+        assert.equal(moment([2011, 0, 3]).format('DDDo'), '3', '3');
+        assert.equal(moment([2011, 0, 4]).format('DDDo'), '4', '4');
+        assert.equal(moment([2011, 0, 5]).format('DDDo'), '5', '5');
+        assert.equal(moment([2011, 0, 6]).format('DDDo'), '6', '6');
+        assert.equal(moment([2011, 0, 7]).format('DDDo'), '7', '7');
+        assert.equal(moment([2011, 0, 8]).format('DDDo'), '8', '8');
+        assert.equal(moment([2011, 0, 9]).format('DDDo'), '9', '9');
+        assert.equal(moment([2011, 0, 10]).format('DDDo'), '10', '10');
+
+        assert.equal(moment([2011, 0, 11]).format('DDDo'), '11', '11');
+        assert.equal(moment([2011, 0, 12]).format('DDDo'), '12', '12');
+        assert.equal(moment([2011, 0, 13]).format('DDDo'), '13', '13');
+        assert.equal(moment([2011, 0, 14]).format('DDDo'), '14', '14');
+        assert.equal(moment([2011, 0, 15]).format('DDDo'), '15', '15');
+        assert.equal(moment([2011, 0, 16]).format('DDDo'), '16', '16');
+        assert.equal(moment([2011, 0, 17]).format('DDDo'), '17', '17');
+        assert.equal(moment([2011, 0, 18]).format('DDDo'), '18', '18');
+        assert.equal(moment([2011, 0, 19]).format('DDDo'), '19', '19');
+        assert.equal(moment([2011, 0, 20]).format('DDDo'), '20', '20');
+
+        assert.equal(moment([2011, 0, 21]).format('DDDo'), '21', '21');
+        assert.equal(moment([2011, 0, 22]).format('DDDo'), '22', '22');
+        assert.equal(moment([2011, 0, 23]).format('DDDo'), '23', '23');
+        assert.equal(moment([2011, 0, 24]).format('DDDo'), '24', '24');
+        assert.equal(moment([2011, 0, 25]).format('DDDo'), '25', '25');
+        assert.equal(moment([2011, 0, 26]).format('DDDo'), '26', '26');
+        assert.equal(moment([2011, 0, 27]).format('DDDo'), '27', '27');
+        assert.equal(moment([2011, 0, 28]).format('DDDo'), '28', '28');
+        assert.equal(moment([2011, 0, 29]).format('DDDo'), '29', '29');
+        assert.equal(moment([2011, 0, 30]).format('DDDo'), '30', '30');
+
+        assert.equal(moment([2011, 0, 31]).format('DDDo'), '31', '31');
+    });
+
+    test('format month', function (assert) {
+        var expected = months, i;
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, i, 1]).format('MMMM'), expected[i], expected[i]);
+            assert.equal(moment([2011, i, 1]).format('MMM'), expected[i], expected[i]);
+        }
+    });
+
+    test('format week', function (assert) {
+        var expected = 'الأحد أحد ح_الإثنين إثنين ن_الثلاثاء ثلاثاء ث_الأربعاء أربعاء ر_الخميس خميس خ_الجمعة جمعة ج_السبت سبت س'.split('_'), i;
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, 0, 2 + i]).format('dddd ddd dd'), expected[i], expected[i]);
+        }
+    });
+
+    test('from', function (assert) {
+        var start = moment([2007, 1, 28]);
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 44}), true),  '44 ثانية', '44 seconds = a few seconds');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 45}), true),  'دقيقة واحدة',      '45 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 89}), true),  'دقيقة واحدة',      '89 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 90}), true),  'دقيقتان',     '90 seconds = 2 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 44}), true),  '44 دقيقة',    '44 minutes = 44 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 45}), true),  'ساعة واحدة',       '45 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 89}), true),  'ساعة واحدة',       '89 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 90}), true),  'ساعتان',       '90 minutes = 2 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 5}), true),   '5 ساعات',       '5 hours = 5 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 21}), true),  '21 ساعة',      '21 hours = 21 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 22}), true),  'يوم واحد',         '22 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 35}), true),  'يوم واحد',         '35 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 36}), true),  'يومان',        '36 hours = 2 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 1}), true),   'يوم واحد',         '1 day = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 5}), true),   '5 أيام',        '5 days = 5 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 25}), true),  '25 يومًا',       '25 days = 25 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 26}), true),  'شهر واحد',       '26 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 30}), true),  'شهر واحد',       '30 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 43}), true),  'شهر واحد',       '43 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 46}), true),  'شهران',      '46 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 74}), true),  'شهران',      '75 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 76}), true),  '3 أشهر',      '76 days = 3 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 1}), true),   'شهر واحد',       '1 month = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 5}), true),   '5 أشهر',      '5 months = 5 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 345}), true), 'عام واحد',        '345 days = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 548}), true), 'عامان',       '548 days = 2 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),   'عام واحد',        '1 year = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),   '5 أعوام',       '5 years = 5 years');
+    });
+
+    test('suffix', function (assert) {
+        assert.equal(moment(30000).from(0), 'بعد 30 ثانية',  'prefix');
+        assert.equal(moment(0).from(30000), 'منذ 30 ثانية', 'suffix');
+    });
+
+    test('now from now', function (assert) {
+        assert.equal(moment().fromNow(), 'منذ ثانية واحدة',  'now from now should display as in the past');
+    });
+
+    test('fromNow', function (assert) {
+        assert.equal(moment().add({s: 30}).fromNow(), 'بعد 30 ثانية', 'in a few seconds');
+        assert.equal(moment().add({d: 5}).fromNow(), 'بعد 5 أيام', 'in 5 days');
+    });
+
+    test('calendar day', function (assert) {
+        var a = moment().hours(12).minutes(0).seconds(0);
+
+        assert.equal(moment(a).calendar(),                   'اليوم عند الساعة 12:00',     'today at the same time');
+        assert.equal(moment(a).add({m: 25}).calendar(),      'اليوم عند الساعة 12:25',     'Now plus 25 min');
+        assert.equal(moment(a).add({h: 1}).calendar(),       'اليوم عند الساعة 13:00',     'Now plus 1 hour');
+        assert.equal(moment(a).add({d: 1}).calendar(),       'غدًا عند الساعة 12:00',      'tomorrow at the same time');
+        assert.equal(moment(a).subtract({h: 1}).calendar(),  'اليوم عند الساعة 11:00',     'Now minus 1 hour');
+        assert.equal(moment(a).subtract({d: 1}).calendar(),  'أمس عند الساعة 12:00',       'yesterday at the same time');
+    });
+
+    test('calendar next week', function (assert) {
+        var i, m;
+        for (i = 2; i < 7; i++) {
+            m = moment().add({d: i});
+            assert.equal(m.calendar(),       m.format('dddd [عند الساعة] LT'),  'Today + ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('dddd [عند الساعة] LT'),  'Today + ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('dddd [عند الساعة] LT'),  'Today + ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar last week', function (assert) {
+        var i, m;
+        for (i = 2; i < 7; i++) {
+            m = moment().subtract({d: i});
+            assert.equal(m.calendar(),       m.format('dddd [عند الساعة] LT'),  'Today - ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('dddd [عند الساعة] LT'),  'Today - ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('dddd [عند الساعة] LT'),  'Today - ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar all else', function (assert) {
+        var weeksAgo = moment().subtract({w: 1}),
+            weeksFromNow = moment().add({w: 1});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),  '1 week ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 1 week');
+
+        weeksAgo = moment().subtract({w: 2});
+        weeksFromNow = moment().add({w: 2});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),  '2 weeks ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 2 weeks');
+    });
+
+    test('weeks year starting wednesday custom', function (assert) {
+        assert.equal(moment('2003 1 6', 'gggg w d').format('YYYY-MM-DD'), '2002-12-28', 'Week 1 of 2003 should be Dec 28 2002');
+        assert.equal(moment('2003 1 0', 'gggg w e').format('YYYY-MM-DD'), '2002-12-28', 'Week 1 of 2003 should be Dec 28 2002');
+        assert.equal(moment('2003 1 6', 'gggg w d').format('gggg w d'), '2003 1 6', 'Saturday of week 1 of 2003 parsed should be formatted as 2003 1 6');
+        assert.equal(moment('2003 1 0', 'gggg w e').format('gggg w e'), '2003 1 0', '1st day of week 1 of 2003 parsed should be formatted as 2003 1 0');
+    });
+
+    test('weeks year starting sunday formatted', function (assert) {
+        assert.equal(moment([2011, 11, 31]).format('w ww wo'), '1 01 1', 'Dec 31 2011 should be week 1');
+        assert.equal(moment([2012,  0,  6]).format('w ww wo'), '1 01 1', 'Jan  6 2012 should be week 1');
+        assert.equal(moment([2012,  0,  7]).format('w ww wo'), '2 02 2', 'Jan  7 2012 should be week 2');
+        assert.equal(moment([2012,  0, 13]).format('w ww wo'), '2 02 2', 'Jan 13 2012 should be week 2');
+        assert.equal(moment([2012,  0, 14]).format('w ww wo'), '3 03 3', 'Jan 14 2012 should be week 3');
+    });
+
+    test('no leading zeros in long date formats', function (assert) {
+        var i, j, longDateStr, shortDateStr;
+        for (i = 1; i <= 9; ++i) {
+            for (j = 1; j <= 9; ++j) {
+                longDateStr = moment([2014, i, j]).format('L');
+                shortDateStr = moment([2014, i, j]).format('l');
+                assert.equal(longDateStr, shortDateStr, 'should not have leading zeros in month or day');
+            }
+        }
+    });
+
+}));
+
+;(function (global, factory) {
+   typeof exports === 'object' && typeof module !== 'undefined'
+       && typeof require === 'function' ? factory(require('../../moment')) :
+   typeof define === 'function' && define.amd ? define(['../../moment'], factory) :
+   factory(global.moment)
+}(this, function (moment) { 'use strict';
+
+    function each(array, callback) {
+        var i;
+        for (i = 0; i < array.length; i++) {
+            callback(array[i], i, array);
+        }
+    }
+
+    function objectKeys(obj) {
+        if (Object.keys) {
+            return Object.keys(obj);
+        } else {
+            // IE8
+            var res = [], i;
+            for (i in obj) {
+                if (obj.hasOwnProperty(i)) {
+                    res.push(i);
+                }
+            }
+            return res;
+        }
+    }
+
+    // Pick the first defined of two or three arguments.
+    function defaults(a, b, c) {
+        if (a != null) {
+            return a;
+        }
+        if (b != null) {
+            return b;
+        }
+        return c;
+    }
+
+    function defineCommonLocaleTests(locale, options) {
+        test('lenient ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing ' + i + ' date check');
+            }
+        });
+
+        test('lenient ordinal parsing of number', function (assert) {
+            var i, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                testMoment = moment('2014 01 ' + i, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing of number ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing of number ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing of number ' + i + ' date check');
+            }
+        });
+
+        test('strict ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do', true);
+                assert.ok(testMoment.isValid(), 'strict ordinal parsing ' + i);
+            }
+        });
+
+        test('meridiem invariant', function (assert) {
+            var h, m, t1, t2;
+            for (h = 0; h < 24; ++h) {
+                for (m = 0; m < 60; m += 15) {
+                    t1 = moment.utc([2000, 0, 1, h, m]);
+                    t2 = moment.utc(t1.format('A h:mm'), 'A h:mm');
+                    assert.equal(t2.format('HH:mm'), t1.format('HH:mm'),
+                            'meridiem at ' + t1.format('HH:mm'));
+                }
+            }
+        });
+
+        test('date format correctness', function (assert) {
+            var data, tokens;
+            data = moment.localeData()._longDateFormat;
+            tokens = objectKeys(data);
+            each(tokens, function (srchToken) {
+                // Check each format string to make sure it does not contain any
+                // tokens that need to be expanded.
+                each(tokens, function (baseToken) {
+                    // strip escaped sequences
+                    var format = data[baseToken].replace(/(\[[^\]]*\])/g, '');
+                    assert.equal(false, !!~format.indexOf(srchToken),
+                            'contains ' + srchToken + ' in ' + baseToken);
+                });
+            });
+        });
+
+        test('month parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr') {
+                // I can't fix it :(
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r;
+                r = moment(m.format(format), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower strict');
+            }
+
+            for (i = 0; i < 12; ++i) {
+                m = moment([2015, i, 15, 18]);
+                tester('MMM');
+                tester('MMM.');
+                tester('MMMM');
+                tester('MMMM.');
+            }
+        });
+
+        test('weekday parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
+                r = moment(m.format(format), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower strict');
+            }
+
+            for (i = 0; i < 7; ++i) {
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -1111,14 +1632,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -1135,7 +1657,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -1603,14 +2125,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -1627,7 +2150,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -2164,14 +2687,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -2188,7 +2712,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -2682,14 +3206,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -2706,7 +3231,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -3177,14 +3702,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -3201,7 +3727,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -3529,15 +4055,15 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-            case 3:
-            case 5:
-            case 6:
-                return '[У мінулую] dddd [ў] LT';
-            case 1:
-            case 2:
-            case 4:
-                return '[У мінулы] dddd [ў] LT';
+                case 0:
+                case 3:
+                case 5:
+                case 6:
+                    return '[У мінулую] dddd [ў] LT';
+                case 1:
+                case 2:
+                case 4:
+                    return '[У мінулы] dddd [ў] LT';
             }
         }
 
@@ -3717,14 +4243,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -3741,7 +4268,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -4029,15 +4556,15 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-            case 3:
-            case 6:
-                return '[В изминалата] dddd [в] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[В изминалия] dddd [в] LT';
+                case 0:
+                case 3:
+                case 6:
+                    return '[В изминалата] dddd [в] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[В изминалия] dddd [в] LT';
             }
         }
 
@@ -4217,14 +4744,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -4241,7 +4769,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -4353,7 +4881,7 @@
     localeModule('bn');
 
     test('parse', function (assert) {
-        var tests = 'জানুয়ারী জানু_ফেবুয়ারী ফেব_মার্চ মার্চ_এপ্রিল এপর_মে মে_জুন জুন_জুলাই জুল_অগাস্ট অগ_সেপ্টেম্বর সেপ্ট_অক্টোবর অক্টো_নভেম্বর নভ_ডিসেম্বর ডিসেম্'.split('_'), i;
+        var tests = 'জানুয়ারী জানু_ফেব্রুয়ারি ফেব_মার্চ মার্চ_এপ্রিল এপ্র_মে মে_জুন জুন_জুলাই জুল_আগস্ট আগ_সেপ্টেম্বর সেপ্ট_অক্টোবর অক্টো_নভেম্বর নভে_ডিসেম্বর ডিসে'.split('_'), i;
         function equalTest(input, mmm, i) {
             assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
         }
@@ -4372,12 +4900,12 @@
 
     test('format', function (assert) {
         var a = [
-                ['dddd, Do MMMM YYYY, a h:mm:ss সময়',  'রবিবার, ১৪ ফেবুয়ারী ২০১০, দুপুর ৩:২৫:৫০ সময়'],
+                ['dddd, Do MMMM YYYY, a h:mm:ss সময়',  'রবিবার, ১৪ ফেব্রুয়ারি ২০১০, দুপুর ৩:২৫:৫০ সময়'],
                 ['ddd, a h সময়',                       'রবি, দুপুর ৩ সময়'],
-                ['M Mo MM MMMM MMM',                   '২ ২ ০২ ফেবুয়ারী ফেব'],
+                ['M Mo MM MMMM MMM',                   '২ ২ ০২ ফেব্রুয়ারি ফেব'],
                 ['YYYY YY',                            '২০১০ ১০'],
                 ['D Do DD',                            '১৪ ১৪ ১৪'],
-                ['d do dddd ddd dd',                   '০ ০ রবিবার রবি রব'],
+                ['d do dddd ddd dd',                   '০ ০ রবিবার রবি রবি'],
                 ['DDD DDDo DDDD',                      '৪৫ ৪৫ ০৪৫'],
                 ['w wo ww',                            '৮ ৮ ০৮'],
                 ['h hh',                               '৩ ০৩'],
@@ -4388,9 +4916,9 @@
                 ['LT',                                 'দুপুর ৩:২৫ সময়'],
                 ['LTS',                                'দুপুর ৩:২৫:৫০ সময়'],
                 ['L',                                  '১৪/০২/২০১০'],
-                ['LL',                                 '১৪ ফেবুয়ারী ২০১০'],
-                ['LLL',                                '১৪ ফেবুয়ারী ২০১০, দুপুর ৩:২৫ সময়'],
-                ['LLLL',                               'রবিবার, ১৪ ফেবুয়ারী ২০১০, দুপুর ৩:২৫ সময়'],
+                ['LL',                                 '১৪ ফেব্রুয়ারি ২০১০'],
+                ['LLL',                                '১৪ ফেব্রুয়ারি ২০১০, দুপুর ৩:২৫ সময়'],
+                ['LLLL',                               'রবিবার, ১৪ ফেব্রুয়ারি ২০১০, দুপুর ৩:২৫ সময়'],
                 ['l',                                  '১৪/২/২০১০'],
                 ['ll',                                 '১৪ ফেব ২০১০'],
                 ['lll',                                '১৪ ফেব ২০১০, দুপুর ৩:২৫ সময়'],
@@ -4441,14 +4969,14 @@
     });
 
     test('format month', function (assert) {
-        var expected = 'জানুয়ারী জানু_ফেবুয়ারী ফেব_মার্চ মার্চ_এপ্রিল এপর_মে মে_জুন জুন_জুলাই জুল_অগাস্ট অগ_সেপ্টেম্বর সেপ্ট_অক্টোবর অক্টো_নভেম্বর নভ_ডিসেম্বর ডিসেম্'.split('_'), i;
+        var expected = 'জানুয়ারী জানু_ফেব্রুয়ারি ফেব_মার্চ মার্চ_এপ্রিল এপ্র_মে মে_জুন জুন_জুলাই জুল_আগস্ট আগ_সেপ্টেম্বর সেপ্ট_অক্টোবর অক্টো_নভেম্বর নভে_ডিসেম্বর ডিসে'.split('_'), i;
         for (i = 0; i < expected.length; i++) {
             assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
         }
     });
 
     test('format week', function (assert) {
-        var expected = 'রবিবার রবি রব_সোমবার সোম সম_মঙ্গলবার মঙ্গল মঙ্গ_বুধবার বুধ বু_বৃহস্পত্তিবার বৃহস্পত্তি ব্রিহ_শুক্রবার শুক্র শু_শনিবার শনি শনি'.split('_'), i;
+        var expected = 'রবিবার রবি রবি_সোমবার সোম সোম_মঙ্গলবার মঙ্গল মঙ্গ_বুধবার বুধ বুধ_বৃহস্পতিবার বৃহস্পতি বৃহঃ_শুক্রবার শুক্র শুক্র_শনিবার শনি শনি'.split('_'), i;
         for (i = 0; i < expected.length; i++) {
             assert.equal(moment([2011, 0, 2 + i]).format('dddd ddd dd'), expected[i], expected[i]);
         }
@@ -4717,14 +5245,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -4741,7 +5270,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -5218,14 +5747,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -5242,7 +5772,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -5720,14 +6250,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -5744,7 +6275,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -5890,11 +6421,11 @@
                 ['a A',                                'pm PM'],
                 ['[the] DDDo [day of the year]',       'the 45. day of the year'],
                 ['LTS',                                '15:25:50'],
-                ['L',                                  '14. 02. 2010'],
+                ['L',                                  '14.02.2010'],
                 ['LL',                                 '14. februar 2010'],
                 ['LLL',                                '14. februar 2010 15:25'],
                 ['LLLL',                               'nedjelja, 14. februar 2010 15:25'],
-                ['l',                                  '14. 2. 2010'],
+                ['l',                                  '14.2.2010'],
                 ['ll',                                 '14. feb. 2010'],
                 ['lll',                                '14. feb. 2010 15:25'],
                 ['llll',                               'ned., 14. feb. 2010 15:25']
@@ -6019,17 +6550,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[u] [nedjelju] [u] LT';
-            case 3:
-                return '[u] [srijedu] [u] LT';
-            case 6:
-                return '[u] [subotu] [u] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[u] dddd [u] LT';
+                case 0:
+                    return '[u] [nedjelju] [u] LT';
+                case 3:
+                    return '[u] [srijedu] [u] LT';
+                case 6:
+                    return '[u] [subotu] [u] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[u] dddd [u] LT';
             }
         }
 
@@ -6048,16 +6579,16 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-            case 3:
-                return '[prošlu] dddd [u] LT';
-            case 6:
-                return '[prošle] [subote] [u] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[prošli] dddd [u] LT';
+                case 0:
+                case 3:
+                    return '[prošlu] dddd [u] LT';
+                case 6:
+                    return '[prošle] [subote] [u] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[prošli] dddd [u] LT';
             }
         }
 
@@ -6237,14 +6768,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -6261,7 +6793,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -6722,14 +7254,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -6746,7 +7279,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -6906,7 +7439,7 @@
                 ['LL',                           '14. únor 2010'],
                 ['LLL',                          '14. únor 2010 15:25'],
                 ['LLLL',                         'neděle 14. únor 2010 15:25'],
-                ['l',                            '14.2.2010'],
+                ['l',                            '14. 2. 2010'],
                 ['ll',                           '14. úno 2010'],
                 ['lll',                          '14. úno 2010 15:25'],
                 ['llll',                         'ne 14. úno 2010 15:25']
@@ -7065,27 +7598,27 @@
             m = moment().add({d: i});
             nextDay = '';
             switch (m.day()) {
-            case 0:
-                nextDay = 'v neděli';
-                break;
-            case 1:
-                nextDay = 'v pondělí';
-                break;
-            case 2:
-                nextDay = 'v úterý';
-                break;
-            case 3:
-                nextDay = 've středu';
-                break;
-            case 4:
-                nextDay = 've čtvrtek';
-                break;
-            case 5:
-                nextDay = 'v pátek';
-                break;
-            case 6:
-                nextDay = 'v sobotu';
-                break;
+                case 0:
+                    nextDay = 'v neděli';
+                    break;
+                case 1:
+                    nextDay = 'v pondělí';
+                    break;
+                case 2:
+                    nextDay = 'v úterý';
+                    break;
+                case 3:
+                    nextDay = 've středu';
+                    break;
+                case 4:
+                    nextDay = 've čtvrtek';
+                    break;
+                case 5:
+                    nextDay = 'v pátek';
+                    break;
+                case 6:
+                    nextDay = 'v sobotu';
+                    break;
             }
             assert.equal(m.calendar(),       m.format('[' + nextDay + '] [v] LT'),  'Today + ' + i + ' days current time');
             m.hours(0).minutes(0).seconds(0).milliseconds(0);
@@ -7101,27 +7634,27 @@
             m = moment().subtract({d: i});
             lastDay = '';
             switch (m.day()) {
-            case 0:
-                lastDay = 'minulou neděli';
-                break;
-            case 1:
-                lastDay = 'minulé pondělí';
-                break;
-            case 2:
-                lastDay = 'minulé úterý';
-                break;
-            case 3:
-                lastDay = 'minulou středu';
-                break;
-            case 4:
-                lastDay = 'minulý čtvrtek';
-                break;
-            case 5:
-                lastDay = 'minulý pátek';
-                break;
-            case 6:
-                lastDay = 'minulou sobotu';
-                break;
+                case 0:
+                    lastDay = 'minulou neděli';
+                    break;
+                case 1:
+                    lastDay = 'minulé pondělí';
+                    break;
+                case 2:
+                    lastDay = 'minulé úterý';
+                    break;
+                case 3:
+                    lastDay = 'minulou středu';
+                    break;
+                case 4:
+                    lastDay = 'minulý čtvrtek';
+                    break;
+                case 5:
+                    lastDay = 'minulý pátek';
+                    break;
+                case 6:
+                    lastDay = 'minulou sobotu';
+                    break;
             }
             assert.equal(m.calendar(),       m.format('[' + lastDay + '] [v] LT'),  'Today - ' + i + ' days current time');
             m.hours(0).minutes(0).seconds(0).milliseconds(0);
@@ -7304,14 +7837,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -7328,7 +7862,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -7794,14 +8328,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -7818,7 +8353,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -8277,14 +8812,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -8301,7 +8837,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -8764,14 +9300,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -8788,7 +9325,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -9245,14 +9782,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -9269,7 +9807,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -9725,14 +10263,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -9749,7 +10288,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -10205,14 +10744,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -10229,7 +10769,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -10740,14 +11280,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -10764,7 +11305,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -11225,14 +11766,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -11249,7 +11791,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -11719,14 +12261,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -11743,7 +12286,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -12204,14 +12747,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -12228,7 +12772,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -12689,14 +13233,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -12713,7 +13258,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -13174,14 +13719,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -13198,7 +13744,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -13684,14 +14230,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -13708,7 +14255,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -14170,14 +14717,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -14194,7 +14742,496 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
+                tester('dd');
+                tester('ddd');
+                tester('dddd');
+            }
+        });
+    }
+
+    function setupDeprecationHandler(test, moment, scope) {
+        test._expectedDeprecations = null;
+        test._observedDeprecations = null;
+        test._oldSupress = moment.suppressDeprecationWarnings;
+        moment.suppressDeprecationWarnings = true;
+        test.expectedDeprecations = function () {
+            test._expectedDeprecations = arguments;
+            test._observedDeprecations = [];
+        };
+        moment.deprecationHandler = function (name, msg) {
+            var deprecationId = matchedDeprecation(name, msg, test._expectedDeprecations);
+            if (deprecationId === -1) {
+                throw new Error('Unexpected deprecation thrown name=' +
+                        name + ' msg=' + msg);
+            }
+            test._observedDeprecations[deprecationId] = 1;
+        };
+    }
+
+    function teardownDeprecationHandler(test, moment, scope) {
+        moment.suppressDeprecationWarnings = test._oldSupress;
+
+        if (test._expectedDeprecations != null) {
+            var missedDeprecations = [];
+            each(test._expectedDeprecations, function (deprecationPattern, id) {
+                if (test._observedDeprecations[id] !== 1) {
+                    missedDeprecations.push(deprecationPattern);
+                }
+            });
+            if (missedDeprecations.length !== 0) {
+                throw new Error('Expected deprecation warnings did not happen: ' +
+                        missedDeprecations.join(' '));
+            }
+        }
+    }
+
+    function matchedDeprecation(name, msg, deprecations) {
+        if (deprecations == null) {
+            return -1;
+        }
+        for (var i = 0; i < deprecations.length; ++i) {
+            if (name != null && name === deprecations[i]) {
+                return i;
+            }
+            if (msg != null && msg.substring(0, deprecations[i].length) === deprecations[i]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /*global QUnit:false*/
+
+    var test = QUnit.test;
+
+    var expect = QUnit.expect;
+
+    function module (name, lifecycle) {
+        QUnit.module(name, {
+            setup : function () {
+                moment.locale('en');
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                teardownDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+    }
+
+    function localeModule (name, lifecycle) {
+        QUnit.module('locale:' + name, {
+            setup : function () {
+                moment.locale(name);
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                moment.locale('en');
+                teardownDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+        defineCommonLocaleTests(name, -1, -1);
+    }
+
+    localeModule('es-do');
+
+    test('parse', function (assert) {
+        var tests = 'enero ene._febrero feb._marzo mar._abril abr._mayo may._junio jun._julio jul._agosto ago._septiembre sep._octubre oct._noviembre nov._diciembre dic.'.split('_'), i;
+        function equalTest(input, mmm, i) {
+            assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
+        }
+        for (i = 0; i < 12; i++) {
+            tests[i] = tests[i].split(' ');
+            equalTest(tests[i][0], 'MMM', i);
+            equalTest(tests[i][1], 'MMM', i);
+            equalTest(tests[i][0], 'MMMM', i);
+            equalTest(tests[i][1], 'MMMM', i);
+            equalTest(tests[i][0].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i][1].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i][0].toLocaleUpperCase(), 'MMMM', i);
+            equalTest(tests[i][1].toLocaleUpperCase(), 'MMMM', i);
+        }
+    });
+
+    test('format', function (assert) {
+        var a = [
+                ['dddd, MMMM Do YYYY, h:mm:ss a',      'domingo, febrero 14º 2010, 3:25:50 pm'],
+                ['ddd, hA',                            'dom., 3PM'],
+                ['M Mo MM MMMM MMM',                   '2 2º 02 febrero feb.'],
+                ['YYYY YY',                            '2010 10'],
+                ['D Do DD',                            '14 14º 14'],
+                ['d do dddd ddd dd',                   '0 0º domingo dom. do'],
+                ['DDD DDDo DDDD',                      '45 45º 045'],
+                ['w wo ww',                            '6 6º 06'],
+                ['YYYY-MMM-DD',                        '2010-feb-14'],
+                ['h hh',                               '3 03'],
+                ['H HH',                               '15 15'],
+                ['m mm',                               '25 25'],
+                ['s ss',                               '50 50'],
+                ['a A',                                'pm PM'],
+                ['[the] DDDo [day of the year]',       'the 45º day of the year'],
+                ['LTS',                                '3:25:50 PM'],
+                ['L',                                  '14/02/2010'],
+                ['LL',                                 '14 de febrero de 2010'],
+                ['LLL',                                '14 de febrero de 2010 3:25 PM'],
+                ['LLLL',                               'domingo, 14 de febrero de 2010 3:25 PM'],
+                ['l',                                  '14/2/2010'],
+                ['ll',                                 '14 de feb. de 2010'],
+                ['lll',                                '14 de feb. de 2010 3:25 PM'],
+                ['llll',                               'dom., 14 de feb. de 2010 3:25 PM']
+            ],
+            b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
+            i;
+        for (i = 0; i < a.length; i++) {
+            assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        }
+    });
+
+    test('format ordinal', function (assert) {
+        assert.equal(moment([2011, 0, 1]).format('DDDo'), '1º', '1º');
+        assert.equal(moment([2011, 0, 2]).format('DDDo'), '2º', '2º');
+        assert.equal(moment([2011, 0, 3]).format('DDDo'), '3º', '3º');
+        assert.equal(moment([2011, 0, 4]).format('DDDo'), '4º', '4º');
+        assert.equal(moment([2011, 0, 5]).format('DDDo'), '5º', '5º');
+        assert.equal(moment([2011, 0, 6]).format('DDDo'), '6º', '6º');
+        assert.equal(moment([2011, 0, 7]).format('DDDo'), '7º', '7º');
+        assert.equal(moment([2011, 0, 8]).format('DDDo'), '8º', '8º');
+        assert.equal(moment([2011, 0, 9]).format('DDDo'), '9º', '9º');
+        assert.equal(moment([2011, 0, 10]).format('DDDo'), '10º', '10º');
+
+        assert.equal(moment([2011, 0, 11]).format('DDDo'), '11º', '11º');
+        assert.equal(moment([2011, 0, 12]).format('DDDo'), '12º', '12º');
+        assert.equal(moment([2011, 0, 13]).format('DDDo'), '13º', '13º');
+        assert.equal(moment([2011, 0, 14]).format('DDDo'), '14º', '14º');
+        assert.equal(moment([2011, 0, 15]).format('DDDo'), '15º', '15º');
+        assert.equal(moment([2011, 0, 16]).format('DDDo'), '16º', '16º');
+        assert.equal(moment([2011, 0, 17]).format('DDDo'), '17º', '17º');
+        assert.equal(moment([2011, 0, 18]).format('DDDo'), '18º', '18º');
+        assert.equal(moment([2011, 0, 19]).format('DDDo'), '19º', '19º');
+        assert.equal(moment([2011, 0, 20]).format('DDDo'), '20º', '20º');
+
+        assert.equal(moment([2011, 0, 21]).format('DDDo'), '21º', '21º');
+        assert.equal(moment([2011, 0, 22]).format('DDDo'), '22º', '22º');
+        assert.equal(moment([2011, 0, 23]).format('DDDo'), '23º', '23º');
+        assert.equal(moment([2011, 0, 24]).format('DDDo'), '24º', '24º');
+        assert.equal(moment([2011, 0, 25]).format('DDDo'), '25º', '25º');
+        assert.equal(moment([2011, 0, 26]).format('DDDo'), '26º', '26º');
+        assert.equal(moment([2011, 0, 27]).format('DDDo'), '27º', '27º');
+        assert.equal(moment([2011, 0, 28]).format('DDDo'), '28º', '28º');
+        assert.equal(moment([2011, 0, 29]).format('DDDo'), '29º', '29º');
+        assert.equal(moment([2011, 0, 30]).format('DDDo'), '30º', '30º');
+
+        assert.equal(moment([2011, 0, 31]).format('DDDo'), '31º', '31º');
+    });
+
+    test('format month', function (assert) {
+        var expected = 'enero ene._febrero feb._marzo mar._abril abr._mayo may._junio jun._julio jul._agosto ago._septiembre sep._octubre oct._noviembre nov._diciembre dic.'.split('_'), i;
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
+        }
+    });
+
+    test('format week', function (assert) {
+        var expected = 'domingo dom. do_lunes lun. lu_martes mar. ma_miércoles mié. mi_jueves jue. ju_viernes vie. vi_sábado sáb. sá'.split('_'), i;
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, 0, 2 + i]).format('dddd ddd dd'), expected[i], expected[i]);
+        }
+    });
+
+    test('from', function (assert) {
+        var start = moment([2007, 1, 28]);
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 44}), true),  'unos segundos', '44 seconds = a few seconds');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 45}), true),  'un minuto',      '45 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 89}), true),  'un minuto',      '89 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 90}), true),  '2 minutos',     '90 seconds = 2 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 44}), true),  '44 minutos',    '44 minutes = 44 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 45}), true),  'una hora',       '45 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 89}), true),  'una hora',       '89 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 90}), true),  '2 horas',       '90 minutes = 2 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 5}), true),   '5 horas',       '5 hours = 5 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 21}), true),  '21 horas',      '21 hours = 21 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 22}), true),  'un día',         '22 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 35}), true),  'un día',         '35 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 36}), true),  '2 días',        '36 hours = 2 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 1}), true),   'un día',         '1 day = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 5}), true),   '5 días',        '5 days = 5 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 25}), true),  '25 días',       '25 days = 25 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 26}), true),  'un mes',       '26 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 30}), true),  'un mes',       '30 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 43}), true),  'un mes',       '43 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 46}), true),  '2 meses',      '46 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 74}), true),  '2 meses',      '75 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 76}), true),  '3 meses',      '76 days = 3 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 1}), true),   'un mes',       '1 month = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 5}), true),   '5 meses',      '5 months = 5 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 345}), true), 'un año',        '345 days = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 548}), true), '2 años',       '548 days = 2 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),   'un año',        '1 year = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),   '5 años',       '5 years = 5 years');
+    });
+
+    test('suffix', function (assert) {
+        assert.equal(moment(30000).from(0), 'en unos segundos',  'prefix');
+        assert.equal(moment(0).from(30000), 'hace unos segundos', 'suffix');
+    });
+
+    test('now from now', function (assert) {
+        assert.equal(moment().fromNow(), 'hace unos segundos',  'now from now should display as in the past');
+    });
+
+    test('fromNow', function (assert) {
+        assert.equal(moment().add({s: 30}).fromNow(), 'en unos segundos', 'en unos segundos');
+        assert.equal(moment().add({d: 5}).fromNow(), 'en 5 días', 'en 5 días');
+    });
+
+    test('calendar day', function (assert) {
+        var a = moment().hours(12).minutes(0).seconds(0);
+
+        assert.equal(moment(a).calendar(),                       'hoy a las 12:00 PM',     'today at the same time');
+        assert.equal(moment(a).add({m: 25}).calendar(),          'hoy a las 12:25 PM',     'Now plus 25 min');
+        assert.equal(moment(a).add({h: 1}).calendar(),           'hoy a las 1:00 PM',     'Now plus 1 hour');
+        assert.equal(moment(a).add({d: 1}).calendar(),           'mañana a las 12:00 PM',  'tomorrow at the same time');
+        assert.equal(moment(a).add({d: 1, h : -1}).calendar(),   'mañana a las 11:00 AM',   'tomorrow minus 1 hour');
+        assert.equal(moment(a).subtract({h: 1}).calendar(),      'hoy a las 11:00 AM',     'Now minus 1 hour');
+        assert.equal(moment(a).subtract({d: 1}).calendar(),      'ayer a las 12:00 PM',    'yesterday at the same time');
+    });
+
+    test('calendar next week', function (assert) {
+        var i, m;
+
+        for (i = 2; i < 7; i++) {
+            m = moment().add({d: i});
+            assert.equal(m.calendar(),       m.format('dddd [a la' + ((m.hours() !== 1) ? 's' : '') + '] LT'),  'Today + ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('dddd [a la' + ((m.hours() !== 1) ? 's' : '') + '] LT'),  'Today + ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('dddd [a la' + ((m.hours() !== 1) ? 's' : '') + '] LT'),  'Today + ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar last week', function (assert) {
+        var i, m;
+
+        for (i = 2; i < 7; i++) {
+            m = moment().subtract({d: i});
+            assert.equal(m.calendar(),       m.format('[el] dddd [pasado a la' + ((m.hours() !== 1) ? 's' : '') + '] LT'),  'Today - ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('[el] dddd [pasado a la' + ((m.hours() !== 1) ? 's' : '') + '] LT'),  'Today - ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('[el] dddd [pasado a la' + ((m.hours() !== 1) ? 's' : '') + '] LT'),  'Today - ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar all else', function (assert) {
+        var weeksAgo = moment().subtract({w: 1}),
+            weeksFromNow = moment().add({w: 1});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),  '1 week ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 1 week');
+
+        weeksAgo = moment().subtract({w: 2});
+        weeksFromNow = moment().add({w: 2});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),  '2 weeks ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 2 weeks');
+    });
+
+    test('weeks year starting sunday formatted', function (assert) {
+        assert.equal(moment([2012, 0,  1]).format('w ww wo'), '52 52 52º', 'Jan  1 2012 should be week 52');
+        assert.equal(moment([2012, 0,  2]).format('w ww wo'),   '1 01 1º', 'Jan  2 2012 should be week 1');
+        assert.equal(moment([2012, 0,  8]).format('w ww wo'),   '1 01 1º', 'Jan  8 2012 should be week 1');
+        assert.equal(moment([2012, 0,  9]).format('w ww wo'),   '2 02 2º', 'Jan  9 2012 should be week 2');
+        assert.equal(moment([2012, 0, 15]).format('w ww wo'),   '2 02 2º', 'Jan 15 2012 should be week 2');
+    });
+
+}));
+
+;(function (global, factory) {
+   typeof exports === 'object' && typeof module !== 'undefined'
+       && typeof require === 'function' ? factory(require('../../moment')) :
+   typeof define === 'function' && define.amd ? define(['../../moment'], factory) :
+   factory(global.moment)
+}(this, function (moment) { 'use strict';
+
+    function each(array, callback) {
+        var i;
+        for (i = 0; i < array.length; i++) {
+            callback(array[i], i, array);
+        }
+    }
+
+    function objectKeys(obj) {
+        if (Object.keys) {
+            return Object.keys(obj);
+        } else {
+            // IE8
+            var res = [], i;
+            for (i in obj) {
+                if (obj.hasOwnProperty(i)) {
+                    res.push(i);
+                }
+            }
+            return res;
+        }
+    }
+
+    // Pick the first defined of two or three arguments.
+    function defaults(a, b, c) {
+        if (a != null) {
+            return a;
+        }
+        if (b != null) {
+            return b;
+        }
+        return c;
+    }
+
+    function defineCommonLocaleTests(locale, options) {
+        test('lenient ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing ' + i + ' date check');
+            }
+        });
+
+        test('lenient ordinal parsing of number', function (assert) {
+            var i, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                testMoment = moment('2014 01 ' + i, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing of number ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing of number ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing of number ' + i + ' date check');
+            }
+        });
+
+        test('strict ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do', true);
+                assert.ok(testMoment.isValid(), 'strict ordinal parsing ' + i);
+            }
+        });
+
+        test('meridiem invariant', function (assert) {
+            var h, m, t1, t2;
+            for (h = 0; h < 24; ++h) {
+                for (m = 0; m < 60; m += 15) {
+                    t1 = moment.utc([2000, 0, 1, h, m]);
+                    t2 = moment.utc(t1.format('A h:mm'), 'A h:mm');
+                    assert.equal(t2.format('HH:mm'), t1.format('HH:mm'),
+                            'meridiem at ' + t1.format('HH:mm'));
+                }
+            }
+        });
+
+        test('date format correctness', function (assert) {
+            var data, tokens;
+            data = moment.localeData()._longDateFormat;
+            tokens = objectKeys(data);
+            each(tokens, function (srchToken) {
+                // Check each format string to make sure it does not contain any
+                // tokens that need to be expanded.
+                each(tokens, function (baseToken) {
+                    // strip escaped sequences
+                    var format = data[baseToken].replace(/(\[[^\]]*\])/g, '');
+                    assert.equal(false, !!~format.indexOf(srchToken),
+                            'contains ' + srchToken + ' in ' + baseToken);
+                });
+            });
+        });
+
+        test('month parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr') {
+                // I can't fix it :(
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r;
+                r = moment(m.format(format), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower strict');
+            }
+
+            for (i = 0; i < 12; ++i) {
+                m = moment([2015, i, 15, 18]);
+                tester('MMM');
+                tester('MMM.');
+                tester('MMMM');
+                tester('MMMM.');
+            }
+        });
+
+        test('weekday parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
+                r = moment(m.format(format), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower strict');
+            }
+
+            for (i = 0; i < 7; ++i) {
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -14658,14 +15695,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -14682,7 +15720,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -15166,14 +16204,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -15190,7 +16229,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -15650,14 +16689,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -15674,7 +16714,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -16127,14 +17167,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -16151,7 +17192,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -16612,14 +17653,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -16636,7 +17678,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -17098,14 +18140,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -17122,7 +18165,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -17589,14 +18632,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -17613,7 +18657,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -18080,14 +19124,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -18104,7 +19149,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -18563,14 +19608,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -18587,7 +19633,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -19052,14 +20098,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -19076,7 +20123,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -19549,14 +20596,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -19573,7 +20621,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -19685,7 +20733,7 @@
     localeModule('gl');
 
     test('parse', function (assert) {
-        var tests = 'Xaneiro Xan._Febreiro Feb._Marzo Mar._Abril Abr._Maio Mai._Xuño Xuñ._Xullo Xul._Agosto Ago._Setembro Set._Outubro Out._Novembro Nov._Decembro Dec.'.split('_'), i;
+        var tests = 'xaneiro xan._febreiro feb._marzo mar._abril abr._maio mai._xuño xuñ._xullo xul._agosto ago._setembro set._outubro out._novembro nov._decembro dec.'.split('_'), i;
         function equalTest(input, mmm, i) {
             assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
         }
@@ -19704,14 +20752,14 @@
 
     test('format', function (assert) {
         var a = [
-                ['dddd, MMMM Do YYYY, h:mm:ss a',      'Domingo, Febreiro 14º 2010, 3:25:50 pm'],
-                ['ddd, hA',                            'Dom., 3PM'],
-                ['M Mo MM MMMM MMM',                   '2 2º 02 Febreiro Feb.'],
+                ['dddd, MMMM Do YYYY, h:mm:ss a',      'domingo, febreiro 14º 2010, 3:25:50 pm'],
+                ['ddd, hA',                            'dom., 3PM'],
+                ['M Mo MM MMMM MMM',                   '2 2º 02 febreiro feb.'],
                 ['YYYY YY',                            '2010 10'],
                 ['D Do DD',                            '14 14º 14'],
-                ['d do dddd ddd dd',                   '0 0º Domingo Dom. Do'],
+                ['d do dddd ddd dd',                   '0 0º domingo dom. do'],
                 ['DDD DDDo DDDD',                      '45 45º 045'],
-                ['w wo ww',                            '7 7º 07'],
+                ['w wo ww',                            '6 6º 06'],
                 ['h hh',                               '3 03'],
                 ['H HH',                               '15 15'],
                 ['m mm',                               '25 25'],
@@ -19720,13 +20768,13 @@
                 ['[the] DDDo [day of the year]',       'the 45º day of the year'],
                 ['LTS',                                '15:25:50'],
                 ['L',                                  '14/02/2010'],
-                ['LL',                                 '14 Febreiro 2010'],
-                ['LLL',                                '14 Febreiro 2010 15:25'],
-                ['LLLL',                               'Domingo 14 Febreiro 2010 15:25'],
+                ['LL',                                 '14 de febreiro de 2010'],
+                ['LLL',                                '14 de febreiro de 2010 15:25'],
+                ['LLLL',                               'domingo, 14 de febreiro de 2010 15:25'],
                 ['l',                                  '14/2/2010'],
-                ['ll',                                 '14 Feb. 2010'],
-                ['lll',                                '14 Feb. 2010 15:25'],
-                ['llll',                               'Dom. 14 Feb. 2010 15:25']
+                ['ll',                                 '14 de feb. de 2010'],
+                ['lll',                                '14 de feb. de 2010 15:25'],
+                ['llll',                               'dom., 14 de feb. de 2010 15:25']
             ],
             b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
             i;
@@ -19773,14 +20821,14 @@
     });
 
     test('format month', function (assert) {
-        var expected = 'Xaneiro Xan._Febreiro Feb._Marzo Mar._Abril Abr._Maio Mai._Xuño Xuñ._Xullo Xul._Agosto Ago._Setembro Set._Outubro Out._Novembro Nov._Decembro Dec.'.split('_'), i;
+        var expected = 'xaneiro xan._febreiro feb._marzo mar._abril abr._maio mai._xuño xuñ._xullo xul._agosto ago._setembro set._outubro out._novembro nov._decembro dec.'.split('_'), i;
         for (i = 0; i < expected.length; i++) {
             assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
         }
     });
 
     test('format week', function (assert) {
-        var expected = 'Domingo Dom. Do_Luns Lun. Lu_Martes Mar. Ma_Mércores Mér. Mé_Xoves Xov. Xo_Venres Ven. Ve_Sábado Sáb. Sá'.split('_'),
+        var expected = 'domingo dom. do_luns lun. lu_martes mar. ma_mércores mér. mé_xoves xov. xo_venres ven. ve_sábado sáb. sá'.split('_'),
         i;
         for (i = 0; i < expected.length; i++) {
             assert.equal(moment([2011, 0, 2 + i]).format('dddd ddd dd'), expected[i], expected[i]);
@@ -19830,7 +20878,7 @@
     });
 
     test('fromNow', function (assert) {
-        assert.equal(moment().add({s: 30}).fromNow(), 'nuns segundos', 'en unos segundos');
+        assert.equal(moment().add({s: 30}).fromNow(), 'nuns segundos', 'nuns segundos');
         assert.equal(moment().add({d: 5}).fromNow(), 'en 5 días', 'en 5 días');
     });
 
@@ -19891,11 +20939,11 @@
     });
 
     test('weeks year starting sunday formatted', function (assert) {
-        assert.equal(moment([2011, 11, 26]).format('w ww wo'), '1 01 1º', 'Dec 26 2011 should be week 1');
-        assert.equal(moment([2012,  0,  1]).format('w ww wo'), '1 01 1º', 'Jan  1 2012 should be week 1');
-        assert.equal(moment([2012,  0,  2]).format('w ww wo'), '2 02 2º', 'Jan  2 2012 should be week 2');
-        assert.equal(moment([2012,  0,  8]).format('w ww wo'), '2 02 2º', 'Jan  8 2012 should be week 2');
-        assert.equal(moment([2012,  0,  9]).format('w ww wo'), '3 03 3º', 'Jan  9 2012 should be week 3');
+        assert.equal(moment([2012, 0,  1]).format('w ww wo'), '52 52 52º', 'Jan  1 2012 should be week 52');
+        assert.equal(moment([2012, 0,  2]).format('w ww wo'),   '1 01 1º', 'Jan  2 2012 should be week 1');
+        assert.equal(moment([2012, 0,  8]).format('w ww wo'),   '1 01 1º', 'Jan  8 2012 should be week 1');
+        assert.equal(moment([2012, 0,  9]).format('w ww wo'),   '2 02 2º', 'Jan  9 2012 should be week 2');
+        assert.equal(moment([2012, 0, 15]).format('w ww wo'),   '2 02 2º', 'Jan 15 2012 should be week 2');
     });
 
 }));
@@ -20042,14 +21090,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -20066,7 +21115,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -20491,14 +21540,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -20515,7 +21565,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -20991,14 +22041,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -21015,7 +22066,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -21161,11 +22212,11 @@
                 ['a A',                                'pm PM'],
                 ['[the] DDDo [day of the year]',       'the 45. day of the year'],
                 ['LTS',                                '15:25:50'],
-                ['L',                                  '14. 02. 2010'],
+                ['L',                                  '14.02.2010'],
                 ['LL',                                 '14. veljača 2010'],
                 ['LLL',                                '14. veljača 2010 15:25'],
                 ['LLLL',                               'nedjelja, 14. veljača 2010 15:25'],
-                ['l',                                  '14. 2. 2010'],
+                ['l',                                  '14.2.2010'],
                 ['ll',                                 '14. velj. 2010'],
                 ['lll',                                '14. velj. 2010 15:25'],
                 ['llll',                               'ned., 14. velj. 2010 15:25']
@@ -21290,17 +22341,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[u] [nedjelju] [u] LT';
-            case 3:
-                return '[u] [srijedu] [u] LT';
-            case 6:
-                return '[u] [subotu] [u] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[u] dddd [u] LT';
+                case 0:
+                    return '[u] [nedjelju] [u] LT';
+                case 3:
+                    return '[u] [srijedu] [u] LT';
+                case 6:
+                    return '[u] [subotu] [u] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[u] dddd [u] LT';
             }
         }
 
@@ -21319,16 +22370,16 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-            case 3:
-                return '[prošlu] dddd [u] LT';
-            case 6:
-                return '[prošle] [subote] [u] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[prošli] dddd [u] LT';
+                case 0:
+                case 3:
+                    return '[prošlu] dddd [u] LT';
+                case 6:
+                    return '[prošle] [subote] [u] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[prošli] dddd [u] LT';
             }
         }
 
@@ -21508,14 +22559,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -21532,7 +22584,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -22006,14 +23058,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -22030,7 +23083,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -22560,14 +23613,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -22584,7 +23638,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -23007,14 +24061,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -23031,7 +24086,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -23498,14 +24553,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -23522,7 +24578,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -23981,14 +25037,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -24005,7 +25062,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -24428,14 +25485,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -24452,7 +25510,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -24878,14 +25936,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -24902,7 +25961,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -25375,14 +26434,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -25399,7 +26459,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -25860,14 +26920,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -25884,7 +26945,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -26365,14 +27426,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -26389,7 +27451,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -26884,14 +27946,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -26908,7 +27971,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -27369,14 +28432,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -27393,7 +28457,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -27831,14 +28895,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -27855,7 +28920,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -28316,14 +29381,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -28340,7 +29406,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -28487,13 +29553,13 @@
                 ['DDDo [metų diena]',                  '45-oji metų diena'],
                 ['LTS',                                '15:25:50'],
                 ['L',                                  '2010-02-14'],
-                ['LL',                                 '2010 m. vasaris 14 d.'],
-                ['LLL',                                '2010 m. vasaris 14 d., 15:25 val.'],
-                ['LLLL',                               '2010 m. vasaris 14 d., sekmadienis, 15:25 val.'],
+                ['LL',                                 '2010 m. vasario 14 d.'],
+                ['LLL',                                '2010 m. vasario 14 d., 15:25 val.'],
+                ['LLLL',                               '2010 m. vasario 14 d., sekmadienis, 15:25 val.'],
                 ['l',                                  '2010-02-14'],
-                ['ll',                                 '2010 m. vasaris 14 d.'],
-                ['lll',                                '2010 m. vasaris 14 d., 15:25 val.'],
-                ['llll',                               '2010 m. vasaris 14 d., Sek, 15:25 val.']
+                ['ll',                                 '2010 m. vasario 14 d.'],
+                ['lll',                                '2010 m. vasario 14 d., 15:25 val.'],
+                ['llll',                               '2010 m. vasario 14 d., Sek, 15:25 val.']
             ],
             b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
             i;
@@ -28673,6 +29739,10 @@
         assert.equal(moment([2012, 0, 15]).format('w ww wo'),  '2 02 2-oji', 'Jan 15 2012 should be week 2');
     });
 
+    test('month cases', function (assert) {
+        assert.equal(moment([2015, 4, 1]).format('LL'), '2015 m. gegužės 1 d.', 'uses format instead of standalone form');
+    });
+
 }));
 
 ;(function (global, factory) {
@@ -28817,14 +29887,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -28841,7 +29912,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -29105,6 +30176,12 @@
         assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),    'gads',                 '1 year = a year');
         assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),    '5 gadi',               '5 years = 5 years');
         assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), false),   'pirms 5 gadiem',       '5 years with suffix = 5 years ago');
+
+        // test that numbers ending with 1 are singular except for when they end with 11 in which case they are plural
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 11}), true),   '11 gadi',              '11 years = 11 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 21}), true),   '21 gads',              '21 year = 21 year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 211}), true),  '211 gadi',             '211 years = 211 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 221}), false), 'pirms 221 gada',       '221 year with suffix = 221 years ago');
     });
 
     test('suffix', function (assert) {
@@ -29322,14 +30399,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -29346,7 +30424,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -29493,11 +30571,11 @@
                 ['a A',                                'pm PM'],
                 ['[the] DDDo [day of the year]',       'the 45. day of the year'],
                 ['LTS',                                '15:25:50'],
-                ['L',                                  '14. 02. 2010'],
+                ['L',                                  '14.02.2010'],
                 ['LL',                                 '14. februar 2010'],
                 ['LLL',                                '14. februar 2010 15:25'],
                 ['LLLL',                               'nedjelja, 14. februar 2010 15:25'],
-                ['l',                                  '14. 2. 2010'],
+                ['l',                                  '14.2.2010'],
                 ['ll',                                 '14. feb. 2010'],
                 ['lll',                                '14. feb. 2010 15:25'],
                 ['llll',                               'ned., 14. feb. 2010 15:25']
@@ -29624,17 +30702,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[u] [nedjelju] [u] LT';
-            case 3:
-                return '[u] [srijedu] [u] LT';
-            case 6:
-                return '[u] [subotu] [u] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[u] dddd [u] LT';
+                case 0:
+                    return '[u] [nedjelju] [u] LT';
+                case 3:
+                    return '[u] [srijedu] [u] LT';
+                case 6:
+                    return '[u] [subotu] [u] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[u] dddd [u] LT';
             }
         }
 
@@ -29844,14 +30922,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -29868,7 +30947,493 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
+                tester('dd');
+                tester('ddd');
+                tester('dddd');
+            }
+        });
+    }
+
+    function setupDeprecationHandler(test, moment, scope) {
+        test._expectedDeprecations = null;
+        test._observedDeprecations = null;
+        test._oldSupress = moment.suppressDeprecationWarnings;
+        moment.suppressDeprecationWarnings = true;
+        test.expectedDeprecations = function () {
+            test._expectedDeprecations = arguments;
+            test._observedDeprecations = [];
+        };
+        moment.deprecationHandler = function (name, msg) {
+            var deprecationId = matchedDeprecation(name, msg, test._expectedDeprecations);
+            if (deprecationId === -1) {
+                throw new Error('Unexpected deprecation thrown name=' +
+                        name + ' msg=' + msg);
+            }
+            test._observedDeprecations[deprecationId] = 1;
+        };
+    }
+
+    function teardownDeprecationHandler(test, moment, scope) {
+        moment.suppressDeprecationWarnings = test._oldSupress;
+
+        if (test._expectedDeprecations != null) {
+            var missedDeprecations = [];
+            each(test._expectedDeprecations, function (deprecationPattern, id) {
+                if (test._observedDeprecations[id] !== 1) {
+                    missedDeprecations.push(deprecationPattern);
+                }
+            });
+            if (missedDeprecations.length !== 0) {
+                throw new Error('Expected deprecation warnings did not happen: ' +
+                        missedDeprecations.join(' '));
+            }
+        }
+    }
+
+    function matchedDeprecation(name, msg, deprecations) {
+        if (deprecations == null) {
+            return -1;
+        }
+        for (var i = 0; i < deprecations.length; ++i) {
+            if (name != null && name === deprecations[i]) {
+                return i;
+            }
+            if (msg != null && msg.substring(0, deprecations[i].length) === deprecations[i]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /*global QUnit:false*/
+
+    var test = QUnit.test;
+
+    var expect = QUnit.expect;
+
+    function module (name, lifecycle) {
+        QUnit.module(name, {
+            setup : function () {
+                moment.locale('en');
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                teardownDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+    }
+
+    function localeModule (name, lifecycle) {
+        QUnit.module('locale:' + name, {
+            setup : function () {
+                moment.locale(name);
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                moment.locale('en');
+                teardownDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+        defineCommonLocaleTests(name, -1, -1);
+    }
+
+    localeModule('mi');
+
+    test('parse', function (assert) {
+        var tests = 'Kohi-tāte Kohi_Hui-tanguru Hui_Poutū-te-rangi Pou_Paenga-whāwhā Pae_Haratua Hara_Pipiri Pipi_Hōngoingoi Hōngoi_Here-turi-kōkā Here_Mahuru Mahu_Whiringa-ā-nuku Whi-nu_Whiringa-ā-rangi Whi-ra_Hakihea Haki'.split('_'), i;
+        function equalTest(input, mmm, i) {
+            assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
+        }
+        for (i = 0; i < 12; i++) {
+            tests[i] = tests[i].split(' ');
+            equalTest(tests[i][0], 'MMM', i);
+            equalTest(tests[i][1], 'MMM', i);
+            equalTest(tests[i][0], 'MMMM', i);
+            equalTest(tests[i][1], 'MMMM', i);
+            equalTest(tests[i][0].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i][1].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i][0].toLocaleUpperCase(), 'MMMM', i);
+            equalTest(tests[i][1].toLocaleUpperCase(), 'MMMM', i);
+        }
+    });
+
+    test('format', function (assert) {
+        var a = [
+                ['dddd, MMMM Do YYYY, h:mm:ss a',      'Rātapu, Hui-tanguru 14º 2010, 3:25:50 pm'],
+                ['ddd, hA',                            'Ta, 3PM'],
+                ['M Mo MM MMMM MMM',                   '2 2º 02 Hui-tanguru Hui'],
+                ['YYYY YY',                            '2010 10'],
+                ['D Do DD',                            '14 14º 14'],
+                ['d do dddd ddd dd',                   '0 0º Rātapu Ta Ta'],
+                ['DDD DDDo DDDD',                      '45 45º 045'],
+                ['w wo ww',                            '6 6º 06'],
+                ['h hh',                               '3 03'],
+                ['H HH',                               '15 15'],
+                ['m mm',                               '25 25'],
+                ['s ss',                               '50 50'],
+                ['a A',                                'pm PM'],
+                ['[the] DDDo [day of the year]',       'the 45º day of the year'],
+                ['LTS',                                '15:25:50'],
+                ['L',                                  '14/02/2010'],
+                ['LL',                                 '14 Hui-tanguru 2010'],
+                ['LLL',                                '14 Hui-tanguru 2010 i 15:25'],
+                ['LLLL',                               'Rātapu, 14 Hui-tanguru 2010 i 15:25'],
+                ['l',                                  '14/2/2010'],
+                ['ll',                                 '14 Hui 2010'],
+                ['lll',                                '14 Hui 2010 i 15:25'],
+                ['llll',                               'Ta, 14 Hui 2010 i 15:25']
+            ],
+            b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
+            i;
+        for (i = 0; i < a.length; i++) {
+            assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        }
+    });
+
+    test('format ordinal', function (assert) {
+        assert.equal(moment([2011, 0, 1]).format('DDDo'), '1º', '1º');
+        assert.equal(moment([2011, 0, 2]).format('DDDo'), '2º', '2º');
+        assert.equal(moment([2011, 0, 3]).format('DDDo'), '3º', '3º');
+        assert.equal(moment([2011, 0, 4]).format('DDDo'), '4º', '4º');
+        assert.equal(moment([2011, 0, 5]).format('DDDo'), '5º', '5º');
+        assert.equal(moment([2011, 0, 6]).format('DDDo'), '6º', '6º');
+        assert.equal(moment([2011, 0, 7]).format('DDDo'), '7º', '7º');
+        assert.equal(moment([2011, 0, 8]).format('DDDo'), '8º', '8º');
+        assert.equal(moment([2011, 0, 9]).format('DDDo'), '9º', '9º');
+        assert.equal(moment([2011, 0, 10]).format('DDDo'), '10º', '10º');
+
+        assert.equal(moment([2011, 0, 11]).format('DDDo'), '11º', '11º');
+        assert.equal(moment([2011, 0, 12]).format('DDDo'), '12º', '12º');
+        assert.equal(moment([2011, 0, 13]).format('DDDo'), '13º', '13º');
+        assert.equal(moment([2011, 0, 14]).format('DDDo'), '14º', '14º');
+        assert.equal(moment([2011, 0, 15]).format('DDDo'), '15º', '15º');
+        assert.equal(moment([2011, 0, 16]).format('DDDo'), '16º', '16º');
+        assert.equal(moment([2011, 0, 17]).format('DDDo'), '17º', '17º');
+        assert.equal(moment([2011, 0, 18]).format('DDDo'), '18º', '18º');
+        assert.equal(moment([2011, 0, 19]).format('DDDo'), '19º', '19º');
+        assert.equal(moment([2011, 0, 20]).format('DDDo'), '20º', '20º');
+
+        assert.equal(moment([2011, 0, 21]).format('DDDo'), '21º', '21º');
+        assert.equal(moment([2011, 0, 22]).format('DDDo'), '22º', '22º');
+        assert.equal(moment([2011, 0, 23]).format('DDDo'), '23º', '23º');
+        assert.equal(moment([2011, 0, 24]).format('DDDo'), '24º', '24º');
+        assert.equal(moment([2011, 0, 25]).format('DDDo'), '25º', '25º');
+        assert.equal(moment([2011, 0, 26]).format('DDDo'), '26º', '26º');
+        assert.equal(moment([2011, 0, 27]).format('DDDo'), '27º', '27º');
+        assert.equal(moment([2011, 0, 28]).format('DDDo'), '28º', '28º');
+        assert.equal(moment([2011, 0, 29]).format('DDDo'), '29º', '29º');
+        assert.equal(moment([2011, 0, 30]).format('DDDo'), '30º', '30º');
+
+        assert.equal(moment([2011, 0, 31]).format('DDDo'), '31º', '31º');
+    });
+
+    test('format month', function (assert) {
+        var expected = 'Kohi-tāte Kohi_Hui-tanguru Hui_Poutū-te-rangi Pou_Paenga-whāwhā Pae_Haratua Hara_Pipiri Pipi_Hōngoingoi Hōngoi_Here-turi-kōkā Here_Mahuru Mahu_Whiringa-ā-nuku Whi-nu_Whiringa-ā-rangi Whi-ra_Hakihea Haki'.split('_'), i;
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
+        }
+    });
+
+    test('format week', function (assert) {
+        var expected = 'Rātapu Ta Ta_Mane Ma Ma_Tūrei Tū Tū_Wenerei We We_Tāite Tāi Tāi_Paraire Pa Pa_Hātarei Hā Hā'.split('_'), i;
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, 0, 2 + i]).format('dddd ddd dd'), expected[i], expected[i]);
+        }
+    });
+
+    test('from', function (assert) {
+        var start = moment([2007, 1, 28]);
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 44}), true),  'te hēkona ruarua', '44 seconds = a few seconds');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 45}), true),  'he meneti',        '45 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 89}), true),  'he meneti',        '89 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 90}), true),  '2 meneti',         '90 seconds = 2 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 44}), true),  '44 meneti',        '44 minutes = 44 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 45}), true),  'te haora',         '45 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 89}), true),  'te haora',         '89 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 90}), true),  '2 haora',          '90 minutes = 2 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 5}), true),   '5 haora',          '5 hours = 5 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 21}), true),  '21 haora',         '21 hours = 21 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 22}), true),  'he ra',            '22 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 35}), true),  'he ra',            '35 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 36}), true),  '2 ra',             '36 hours = 2 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 1}), true),   'he ra',            '1 day = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 5}), true),   '5 ra',             '5 days = 5 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 25}), true),  '25 ra',            '25 days = 25 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 26}), true),  'he marama',        '26 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 30}), true),  'he marama',        '30 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 43}), true),  'he marama',        '43 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 46}), true),  '2 marama',         '46 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 74}), true),  '2 marama',         '75 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 76}), true),  '3 marama',         '76 days = 3 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 1}), true),   'he marama',         '1 month = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 5}), true),   '5 marama',         '5 months = 5 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 345}), true), 'he tau',           '345 days = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 548}), true), '2 tau',            '548 days = 2 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),   'he tau',           '1 year = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),   '5 tau',            '5 years = 5 years');
+    });
+
+    test('suffix', function (assert) {
+        assert.equal(moment(30000).from(0), 'i roto i te hēkona ruarua',  'prefix');
+        assert.equal(moment(0).from(30000), 'te hēkona ruarua i mua', 'suffix');
+    });
+
+    test('now from now', function (assert) {
+        assert.equal(moment().fromNow(), 'te hēkona ruarua i mua',  'now from now should display as in the past');
+    });
+
+    test('fromNow', function (assert) {
+        assert.equal(moment().add({s: 30}).fromNow(), 'i roto i te hēkona ruarua', 'in a few seconds');
+        assert.equal(moment().add({d: 5}).fromNow(), 'i roto i 5 ra', 'in 5 days');
+    });
+
+    test('calendar day', function (assert) {
+        var a = moment().hours(12).minutes(0).seconds(0);
+
+        assert.equal(moment(a).calendar(),                   'i teie mahana, i 12:00', 'today at the same time');
+        assert.equal(moment(a).add({m: 25}).calendar(),      'i teie mahana, i 12:25', 'Now plus 25 min');
+        assert.equal(moment(a).add({h: 1}).calendar(),       'i teie mahana, i 13:00', 'Now plus 1 hour');
+        assert.equal(moment(a).add({d: 1}).calendar(),       'apopo i 12:00',       'tomorrow at the same time');
+        assert.equal(moment(a).subtract({h: 1}).calendar(),  'i teie mahana, i 11:00', 'Now minus 1 hour');
+        assert.equal(moment(a).subtract({d: 1}).calendar(),  'inanahi i 12:00',     'yesterday at the same time');
+    });
+
+    test('calendar next week', function (assert) {
+        var i, m;
+        for (i = 2; i < 7; i++) {
+            m = moment().add({d: i});
+            assert.equal(m.calendar(),       m.format('dddd [i] LT'),  'Today + ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('dddd [i] LT'),  'Today + ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('dddd [i] LT'),  'Today + ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar last week', function (assert) {
+        var i, m;
+
+        for (i = 2; i < 7; i++) {
+            m = moment().subtract({d: i});
+            assert.equal(m.calendar(),       m.format('dddd [whakamutunga i] LT'), 'Today - ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('dddd [whakamutunga i] LT'),  'Today - ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('dddd [whakamutunga i] LT'),  'Today - ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar all else', function (assert) {
+        var weeksAgo = moment().subtract({w: 1}),
+            weeksFromNow = moment().add({w: 1});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),  '1 week ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 1 week');
+
+        weeksAgo = moment().subtract({w: 2});
+        weeksFromNow = moment().add({w: 2});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),  '2 weeks ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 2 weeks');
+    });
+
+    test('weeks year starting sunday formatted', function (assert) {
+        assert.equal(moment([2012, 0,  1]).format('w ww wo'), '52 52 52º', 'Jan  1 2012 should be week 52');
+        assert.equal(moment([2012, 0,  2]).format('w ww wo'),   '1 01 1º', 'Jan  2 2012 should be week 1');
+        assert.equal(moment([2012, 0,  8]).format('w ww wo'),   '1 01 1º', 'Jan  8 2012 should be week 1');
+        assert.equal(moment([2012, 0,  9]).format('w ww wo'),   '2 02 2º', 'Jan  9 2012 should be week 2');
+        assert.equal(moment([2012, 0, 15]).format('w ww wo'),   '2 02 2º', 'Jan 15 2012 should be week 2');
+    });
+
+}));
+
+;(function (global, factory) {
+   typeof exports === 'object' && typeof module !== 'undefined'
+       && typeof require === 'function' ? factory(require('../../moment')) :
+   typeof define === 'function' && define.amd ? define(['../../moment'], factory) :
+   factory(global.moment)
+}(this, function (moment) { 'use strict';
+
+    function each(array, callback) {
+        var i;
+        for (i = 0; i < array.length; i++) {
+            callback(array[i], i, array);
+        }
+    }
+
+    function objectKeys(obj) {
+        if (Object.keys) {
+            return Object.keys(obj);
+        } else {
+            // IE8
+            var res = [], i;
+            for (i in obj) {
+                if (obj.hasOwnProperty(i)) {
+                    res.push(i);
+                }
+            }
+            return res;
+        }
+    }
+
+    // Pick the first defined of two or three arguments.
+    function defaults(a, b, c) {
+        if (a != null) {
+            return a;
+        }
+        if (b != null) {
+            return b;
+        }
+        return c;
+    }
+
+    function defineCommonLocaleTests(locale, options) {
+        test('lenient ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing ' + i + ' date check');
+            }
+        });
+
+        test('lenient ordinal parsing of number', function (assert) {
+            var i, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                testMoment = moment('2014 01 ' + i, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing of number ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing of number ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing of number ' + i + ' date check');
+            }
+        });
+
+        test('strict ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do', true);
+                assert.ok(testMoment.isValid(), 'strict ordinal parsing ' + i);
+            }
+        });
+
+        test('meridiem invariant', function (assert) {
+            var h, m, t1, t2;
+            for (h = 0; h < 24; ++h) {
+                for (m = 0; m < 60; m += 15) {
+                    t1 = moment.utc([2000, 0, 1, h, m]);
+                    t2 = moment.utc(t1.format('A h:mm'), 'A h:mm');
+                    assert.equal(t2.format('HH:mm'), t1.format('HH:mm'),
+                            'meridiem at ' + t1.format('HH:mm'));
+                }
+            }
+        });
+
+        test('date format correctness', function (assert) {
+            var data, tokens;
+            data = moment.localeData()._longDateFormat;
+            tokens = objectKeys(data);
+            each(tokens, function (srchToken) {
+                // Check each format string to make sure it does not contain any
+                // tokens that need to be expanded.
+                each(tokens, function (baseToken) {
+                    // strip escaped sequences
+                    var format = data[baseToken].replace(/(\[[^\]]*\])/g, '');
+                    assert.equal(false, !!~format.indexOf(srchToken),
+                            'contains ' + srchToken + ' in ' + baseToken);
+                });
+            });
+        });
+
+        test('month parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr') {
+                // I can't fix it :(
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r;
+                r = moment(m.format(format), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower strict');
+            }
+
+            for (i = 0; i < 12; ++i) {
+                m = moment([2015, i, 15, 18]);
+                tester('MMM');
+                tester('MMM.');
+                tester('MMMM');
+                tester('MMMM.');
+            }
+        });
+
+        test('weekday parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
+                r = moment(m.format(format), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower strict');
+            }
+
+            for (i = 0; i < 7; ++i) {
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -30155,15 +31720,15 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-            case 3:
-            case 6:
-                return '[Изминатата] dddd [во] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[Изминатиот] dddd [во] LT';
+                case 0:
+                case 3:
+                case 6:
+                    return '[Изминатата] dddd [во] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[Изминатиот] dddd [во] LT';
             }
         }
 
@@ -30343,14 +31908,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -30367,7 +31933,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -30843,14 +32409,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -30867,7 +32434,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -31343,14 +32910,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -31367,7 +32935,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -31836,14 +33404,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -31860,7 +33429,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -32329,14 +33898,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -32353,7 +33923,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -32891,14 +34461,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -32915,7 +34486,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -33376,14 +34947,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -33400,7 +34972,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -33875,14 +35447,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -33899,7 +35472,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -34209,7 +35782,9 @@
 
     test('month abbreviation', function (assert) {
         assert.equal(moment([2012, 5, 23]).format('D-MMM-YYYY'), '23-jun-2012', 'format month abbreviation surrounded by dashes should not include a dot');
+        assert.equal(moment([2012, 5, 23]).unix(), moment('23-jun-2012', 'D-MMM-YYYY').unix(), 'parse month abbreviation surrounded by dashes without dot');
         assert.equal(moment([2012, 5, 23]).format('D MMM YYYY'), '23 jun. 2012', 'format month abbreviation not surrounded by dashes should include a dot');
+        assert.equal(moment([2012, 5, 23]).unix(), moment('23 jun. 2012', 'D MMM YYYY').unix(), 'parse month abbreviation not surrounded by dashes with dot');
     });
 
     test('weeks year starting sunday formatted', function (assert) {
@@ -34364,14 +35939,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -34388,7 +35964,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -34848,14 +36424,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -34872,7 +36449,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -35445,14 +37022,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -35469,7 +37047,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -35784,14 +37362,14 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[W zeszłą niedzielę o] LT';
-            case 3:
-                return '[W zeszłą środę o] LT';
-            case 6:
-                return '[W zeszłą sobotę o] LT';
-            default:
-                return '[W zeszły] dddd [o] LT';
+                case 0:
+                    return '[W zeszłą niedzielę o] LT';
+                case 3:
+                    return '[W zeszłą środę o] LT';
+                case 6:
+                    return '[W zeszłą sobotę o] LT';
+                default:
+                    return '[W zeszły] dddd [o] LT';
             }
         }
 
@@ -35973,14 +37551,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -35997,7 +37576,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -36455,14 +38034,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -36479,7 +38059,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -36935,14 +38515,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -36959,7 +38540,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -37427,14 +39008,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -37451,7 +39033,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -37800,16 +39382,16 @@
 
         function makeFormatNext(d) {
             switch (d.day()) {
-            case 0:
-                return '[В следующее] dddd [в] LT';
-            case 1:
-            case 2:
-            case 4:
-                return '[В следующий] dddd [в] LT';
-            case 3:
-            case 5:
-            case 6:
-                return '[В следующую] dddd [в] LT';
+                case 0:
+                    return '[В следующее] dddd [в] LT';
+                case 1:
+                case 2:
+                case 4:
+                    return '[В следующий] dddd [в] LT';
+                case 3:
+                case 5:
+                case 6:
+                    return '[В следующую] dddd [в] LT';
             }
         }
 
@@ -37848,16 +39430,16 @@
 
         function makeFormatLast(d) {
             switch (d.day()) {
-            case 0:
-                return '[В прошлое] dddd [в] LT';
-            case 1:
-            case 2:
-            case 4:
-                return '[В прошлый] dddd [в] LT';
-            case 3:
-            case 5:
-            case 6:
-                return '[В прошлую] dddd [в] LT';
+                case 0:
+                    return '[В прошлое] dddd [в] LT';
+                case 1:
+                case 2:
+                case 4:
+                    return '[В прошлый] dddd [в] LT';
+                case 3:
+                case 5:
+                case 6:
+                    return '[В прошлую] dddd [в] LT';
             }
         }
 
@@ -38057,14 +39639,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -38081,7 +39664,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -38552,14 +40135,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -38576,7 +40160,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -39031,14 +40615,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -39055,7 +40640,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -39364,27 +40949,27 @@
             m = moment().add({d: i});
             nextDay = '';
             switch (m.day()) {
-            case 0:
-                nextDay = 'v nedeľu';
-                break;
-            case 1:
-                nextDay = 'v pondelok';
-                break;
-            case 2:
-                nextDay = 'v utorok';
-                break;
-            case 3:
-                nextDay = 'v stredu';
-                break;
-            case 4:
-                nextDay = 'vo štvrtok';
-                break;
-            case 5:
-                nextDay = 'v piatok';
-                break;
-            case 6:
-                nextDay = 'v sobotu';
-                break;
+                case 0:
+                    nextDay = 'v nedeľu';
+                    break;
+                case 1:
+                    nextDay = 'v pondelok';
+                    break;
+                case 2:
+                    nextDay = 'v utorok';
+                    break;
+                case 3:
+                    nextDay = 'v stredu';
+                    break;
+                case 4:
+                    nextDay = 'vo štvrtok';
+                    break;
+                case 5:
+                    nextDay = 'v piatok';
+                    break;
+                case 6:
+                    nextDay = 'v sobotu';
+                    break;
             }
             assert.equal(m.calendar(),       m.format('[' + nextDay + '] [o] LT'),  'Today + ' + i + ' days current time');
             m.hours(0).minutes(0).seconds(0).milliseconds(0);
@@ -39400,27 +40985,27 @@
             m = moment().subtract({d: i});
             lastDay = '';
             switch (m.day()) {
-            case 0:
-                lastDay = 'minulú nedeľu';
-                break;
-            case 1:
-                lastDay = 'minulý pondelok';
-                break;
-            case 2:
-                lastDay = 'minulý utorok';
-                break;
-            case 3:
-                lastDay = 'minulú stredu';
-                break;
-            case 4:
-                lastDay = 'minulý štvrtok';
-                break;
-            case 5:
-                lastDay = 'minulý piatok';
-                break;
-            case 6:
-                lastDay = 'minulú sobotu';
-                break;
+                case 0:
+                    lastDay = 'minulú nedeľu';
+                    break;
+                case 1:
+                    lastDay = 'minulý pondelok';
+                    break;
+                case 2:
+                    lastDay = 'minulý utorok';
+                    break;
+                case 3:
+                    lastDay = 'minulú stredu';
+                    break;
+                case 4:
+                    lastDay = 'minulý štvrtok';
+                    break;
+                case 5:
+                    lastDay = 'minulý piatok';
+                    break;
+                case 6:
+                    lastDay = 'minulú sobotu';
+                    break;
             }
             assert.equal(m.calendar(),       m.format('[' + lastDay + '] [o] LT'),  'Today - ' + i + ' days current time');
             m.hours(0).minutes(0).seconds(0).milliseconds(0);
@@ -39603,14 +41188,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -39627,7 +41213,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -39773,11 +41359,11 @@
                 ['a A',                                'pm PM'],
                 ['[the] DDDo [day of the year]',       'the 45. day of the year'],
                 ['LTS',                                '15:25:50'],
-                ['L',                                  '14. 02. 2010'],
+                ['L',                                  '14.02.2010'],
                 ['LL',                                 '14. februar 2010'],
                 ['LLL',                                '14. februar 2010 15:25'],
                 ['LLLL',                               'nedelja, 14. februar 2010 15:25'],
-                ['l',                                  '14. 2. 2010'],
+                ['l',                                  '14.2.2010'],
                 ['ll',                                 '14. feb. 2010'],
                 ['lll',                                '14. feb. 2010 15:25'],
                 ['llll',                               'ned., 14. feb. 2010 15:25']
@@ -39992,17 +41578,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[v] [nedeljo] [ob] LT';
-            case 3:
-                return '[v] [sredo] [ob] LT';
-            case 6:
-                return '[v] [soboto] [ob] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[v] dddd [ob] LT';
+                case 0:
+                    return '[v] [nedeljo] [ob] LT';
+                case 3:
+                    return '[v] [sredo] [ob] LT';
+                case 6:
+                    return '[v] [soboto] [ob] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[v] dddd [ob] LT';
             }
         }
 
@@ -40021,17 +41607,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[prejšnjo] [nedeljo] [ob] LT';
-            case 3:
-                return '[prejšnjo] [sredo] [ob] LT';
-            case 6:
-                return '[prejšnjo] [soboto] [ob] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[prejšnji] dddd [ob] LT';
+                case 0:
+                    return '[prejšnjo] [nedeljo] [ob] LT';
+                case 3:
+                    return '[prejšnjo] [sredo] [ob] LT';
+                case 6:
+                    return '[prejšnjo] [soboto] [ob] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[prejšnji] dddd [ob] LT';
             }
         }
 
@@ -40211,14 +41797,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -40235,7 +41822,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -40711,14 +42298,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -40735,7 +42323,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -40882,11 +42470,11 @@
                 ['a A',                                'pm PM'],
                 ['[the] DDDo [day of the year]',       'the 45. day of the year'],
                 ['LTS',                                '15:25:50'],
-                ['L',                                  '14. 02. 2010'],
+                ['L',                                  '14.02.2010'],
                 ['LL',                                 '14. фебруар 2010'],
                 ['LLL',                                '14. фебруар 2010 15:25'],
                 ['LLLL',                               'недеља, 14. фебруар 2010 15:25'],
-                ['l',                                  '14. 2. 2010'],
+                ['l',                                  '14.2.2010'],
                 ['ll',                                 '14. феб. 2010'],
                 ['lll',                                '14. феб. 2010 15:25'],
                 ['llll',                               'нед., 14. феб. 2010 15:25']
@@ -41013,17 +42601,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[у] [недељу] [у] LT';
-            case 3:
-                return '[у] [среду] [у] LT';
-            case 6:
-                return '[у] [суботу] [у] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[у] dddd [у] LT';
+                case 0:
+                    return '[у] [недељу] [у] LT';
+                case 3:
+                    return '[у] [среду] [у] LT';
+                case 6:
+                    return '[у] [суботу] [у] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[у] dddd [у] LT';
             }
         }
 
@@ -41230,14 +42818,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -41254,7 +42843,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -41401,11 +42990,11 @@
                 ['a A',                                'pm PM'],
                 ['[the] DDDo [day of the year]',       'the 45. day of the year'],
                 ['LTS',                                '15:25:50'],
-                ['L',                                  '14. 02. 2010'],
+                ['L',                                  '14.02.2010'],
                 ['LL',                                 '14. februar 2010'],
                 ['LLL',                                '14. februar 2010 15:25'],
                 ['LLLL',                               'nedelja, 14. februar 2010 15:25'],
-                ['l',                                  '14. 2. 2010'],
+                ['l',                                  '14.2.2010'],
                 ['ll',                                 '14. feb. 2010'],
                 ['lll',                                '14. feb. 2010 15:25'],
                 ['llll',                               'ned., 14. feb. 2010 15:25']
@@ -41532,17 +43121,17 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-                return '[u] [nedelju] [u] LT';
-            case 3:
-                return '[u] [sredu] [u] LT';
-            case 6:
-                return '[u] [subotu] [u] LT';
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return '[u] dddd [u] LT';
+                case 0:
+                    return '[u] [nedelju] [u] LT';
+                case 3:
+                    return '[u] [sredu] [u] LT';
+                case 6:
+                    return '[u] [subotu] [u] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[u] dddd [u] LT';
             }
         }
 
@@ -41749,14 +43338,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -41773,7 +43363,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -42266,14 +43856,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -42290,7 +43881,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -42750,14 +44341,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -42774,7 +44366,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -43234,14 +44826,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -43258,7 +44851,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -43721,14 +45314,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -43745,7 +45339,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -44221,14 +45815,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -44245,7 +45840,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -44357,7 +45952,7 @@
     localeModule('th');
 
     test('parse', function (assert) {
-        var tests = 'มกราคม มกรา_กุมภาพันธ์ กุมภา_มีนาคม มีนา_เมษายน เมษา_พฤษภาคม พฤษภา_มิถุนายน มิถุนา_กรกฎาคม กรกฎา_สิงหาคม สิงหา_กันยายน กันยา_ตุลาคม ตุลา_พฤศจิกายน พฤศจิกา_ธันวาคม ธันวา'.split('_'), i;
+        var tests = 'มกราคม ม.ค._กุมภาพันธ์ ก.พ._มีนาคม มี.ค._เมษายน เม.ย._พฤษภาคม พ.ค._มิถุนายน มิ.ย._กรกฎาคม ก.ค._สิงหาคม ส.ค._กันยายน ก.ย._ตุลาคม ต.ค._พฤศจิกายน พ.ย._ธันวาคม ธ.ค.'.split('_'), i;
         function equalTest(input, mmm, i) {
             assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
         }
@@ -44378,7 +45973,7 @@
         var a = [
                 ['dddd, Do MMMM YYYY, h:mm:ss a',      'อาทิตย์, 14 กุมภาพันธ์ 2010, 3:25:50 หลังเที่ยง'],
                 ['ddd, h A',                           'อาทิตย์, 3 หลังเที่ยง'],
-                ['M Mo MM MMMM MMM',                   '2 2 02 กุมภาพันธ์ กุมภา'],
+                ['M Mo MM MMMM MMM',                   '2 2 02 กุมภาพันธ์ ก.พ.'],
                 ['YYYY YY',                            '2010 10'],
                 ['D Do DD',                            '14 14 14'],
                 ['d do dddd ddd dd',                   '0 0 อาทิตย์ อาทิตย์ อา.'],
@@ -44390,15 +45985,15 @@
                 ['s ss',                               '50 50'],
                 ['a A',                                'หลังเที่ยง หลังเที่ยง'],
                 ['[the] DDDo [day of the year]',       'the 45 day of the year'],
-                ['LTS',                                '15 นาฬิกา 25 นาที 50 วินาที'],
+                ['LTS',                                '15:25:50'],
                 ['L',                                  '2010/02/14'],
                 ['LL',                                 '14 กุมภาพันธ์ 2010'],
-                ['LLL',                                '14 กุมภาพันธ์ 2010 เวลา 15 นาฬิกา 25 นาที'],
-                ['LLLL',                               'วันอาทิตย์ที่ 14 กุมภาพันธ์ 2010 เวลา 15 นาฬิกา 25 นาที'],
+                ['LLL',                                '14 กุมภาพันธ์ 2010 เวลา 15:25'],
+                ['LLLL',                               'วันอาทิตย์ที่ 14 กุมภาพันธ์ 2010 เวลา 15:25'],
                 ['l',                                  '2010/2/14'],
-                ['ll',                                 '14 กุมภา 2010'],
-                ['lll',                                '14 กุมภา 2010 เวลา 15 นาฬิกา 25 นาที'],
-                ['llll',                               'วันอาทิตย์ที่ 14 กุมภา 2010 เวลา 15 นาฬิกา 25 นาที']
+                ['ll',                                 '14 ก.พ. 2010'],
+                ['lll',                                '14 ก.พ. 2010 เวลา 15:25'],
+                ['llll',                               'วันอาทิตย์ที่ 14 ก.พ. 2010 เวลา 15:25']
             ],
             b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
             i;
@@ -44408,7 +46003,7 @@
     });
 
     test('format month', function (assert) {
-        var expected = 'มกราคม มกรา_กุมภาพันธ์ กุมภา_มีนาคม มีนา_เมษายน เมษา_พฤษภาคม พฤษภา_มิถุนายน มิถุนา_กรกฎาคม กรกฎา_สิงหาคม สิงหา_กันยายน กันยา_ตุลาคม ตุลา_พฤศจิกายน พฤศจิกา_ธันวาคม ธันวา'.split('_'), i;
+        var expected = 'มกราคม ม.ค._กุมภาพันธ์ ก.พ._มีนาคม มี.ค._เมษายน เม.ย._พฤษภาคม พ.ค._มิถุนายน มิ.ย._กรกฎาคม ก.ค._สิงหาคม ส.ค._กันยายน ก.ย._ตุลาคม ต.ค._พฤศจิกายน พ.ย._ธันวาคม ธ.ค.'.split('_'), i;
         for (i = 0; i < expected.length; i++) {
             assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
         }
@@ -44470,12 +46065,12 @@
     test('calendar day', function (assert) {
         var a = moment().hours(12).minutes(0).seconds(0);
 
-        assert.equal(moment(a).calendar(),                   'วันนี้ เวลา 12 นาฬิกา 0 นาที',      'today at the same time');
-        assert.equal(moment(a).add({m: 25}).calendar(),      'วันนี้ เวลา 12 นาฬิกา 25 นาที',     'Now plus 25 min');
-        assert.equal(moment(a).add({h: 1}).calendar(),       'วันนี้ เวลา 13 นาฬิกา 0 นาที',      'Now plus 1 hour');
-        assert.equal(moment(a).add({d: 1}).calendar(),       'พรุ่งนี้ เวลา 12 นาฬิกา 0 นาที',    'tomorrow at the same time');
-        assert.equal(moment(a).subtract({h: 1}).calendar(),  'วันนี้ เวลา 11 นาฬิกา 0 นาที',      'Now minus 1 hour');
-        assert.equal(moment(a).subtract({d: 1}).calendar(),  'เมื่อวานนี้ เวลา 12 นาฬิกา 0 นาที', 'yesterday at the same time');
+        assert.equal(moment(a).calendar(),                   'วันนี้ เวลา 12:00',      'today at the same time');
+        assert.equal(moment(a).add({m: 25}).calendar(),      'วันนี้ เวลา 12:25',     'Now plus 25 min');
+        assert.equal(moment(a).add({h: 1}).calendar(),       'วันนี้ เวลา 13:00',      'Now plus 1 hour');
+        assert.equal(moment(a).add({d: 1}).calendar(),       'พรุ่งนี้ เวลา 12:00',    'tomorrow at the same time');
+        assert.equal(moment(a).subtract({h: 1}).calendar(),  'วันนี้ เวลา 11:00',      'Now minus 1 hour');
+        assert.equal(moment(a).subtract({d: 1}).calendar(),  'เมื่อวานนี้ เวลา 12:00', 'yesterday at the same time');
     });
 
     test('calendar next week', function (assert) {
@@ -44668,14 +46263,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -44692,7 +46288,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -45151,14 +46747,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -45175,7 +46772,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -45651,14 +47248,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -45675,7 +47273,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -46146,14 +47744,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -46170,7 +47769,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -46634,14 +48233,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -46658,7 +48258,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -47118,14 +48718,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -47142,7 +48743,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -47602,14 +49203,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -47626,7 +49228,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -47931,15 +49533,15 @@
 
         function makeFormat(d) {
             switch (d.day()) {
-            case 0:
-            case 3:
-            case 5:
-            case 6:
-                return '[Минулої] dddd [о' + (d.hours() === 11 ? 'б' : '') + '] LT';
-            case 1:
-            case 2:
-            case 4:
-                return '[Минулого] dddd [о' + (d.hours() === 11 ? 'б' : '') + '] LT';
+                case 0:
+                case 3:
+                case 5:
+                case 6:
+                    return '[Минулої] dddd [о' + (d.hours() === 11 ? 'б' : '') + '] LT';
+                case 1:
+                case 2:
+                case 4:
+                    return '[Минулого] dddd [о' + (d.hours() === 11 ? 'б' : '') + '] LT';
             }
         }
 
@@ -48119,14 +49721,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -48143,7 +49746,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -48604,14 +50207,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -48628,7 +50232,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -49099,14 +50703,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -49123,7 +50728,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -49584,14 +51189,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -49608,7 +51214,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -50063,14 +51669,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -50087,7 +51694,474 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
+                tester('dd');
+                tester('ddd');
+                tester('dddd');
+            }
+        });
+    }
+
+    function setupDeprecationHandler(test, moment, scope) {
+        test._expectedDeprecations = null;
+        test._observedDeprecations = null;
+        test._oldSupress = moment.suppressDeprecationWarnings;
+        moment.suppressDeprecationWarnings = true;
+        test.expectedDeprecations = function () {
+            test._expectedDeprecations = arguments;
+            test._observedDeprecations = [];
+        };
+        moment.deprecationHandler = function (name, msg) {
+            var deprecationId = matchedDeprecation(name, msg, test._expectedDeprecations);
+            if (deprecationId === -1) {
+                throw new Error('Unexpected deprecation thrown name=' +
+                        name + ' msg=' + msg);
+            }
+            test._observedDeprecations[deprecationId] = 1;
+        };
+    }
+
+    function teardownDeprecationHandler(test, moment, scope) {
+        moment.suppressDeprecationWarnings = test._oldSupress;
+
+        if (test._expectedDeprecations != null) {
+            var missedDeprecations = [];
+            each(test._expectedDeprecations, function (deprecationPattern, id) {
+                if (test._observedDeprecations[id] !== 1) {
+                    missedDeprecations.push(deprecationPattern);
+                }
+            });
+            if (missedDeprecations.length !== 0) {
+                throw new Error('Expected deprecation warnings did not happen: ' +
+                        missedDeprecations.join(' '));
+            }
+        }
+    }
+
+    function matchedDeprecation(name, msg, deprecations) {
+        if (deprecations == null) {
+            return -1;
+        }
+        for (var i = 0; i < deprecations.length; ++i) {
+            if (name != null && name === deprecations[i]) {
+                return i;
+            }
+            if (msg != null && msg.substring(0, deprecations[i].length) === deprecations[i]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /*global QUnit:false*/
+
+    var test = QUnit.test;
+
+    var expect = QUnit.expect;
+
+    function module (name, lifecycle) {
+        QUnit.module(name, {
+            setup : function () {
+                moment.locale('en');
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                teardownDeprecationHandler(test, moment, 'core');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+    }
+
+    function localeModule (name, lifecycle) {
+        QUnit.module('locale:' + name, {
+            setup : function () {
+                moment.locale(name);
+                moment.createFromInputFallback = function (config) {
+                    throw new Error('input not handled by moment: ' + config._i);
+                };
+                setupDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.setup) {
+                    lifecycle.setup();
+                }
+            },
+            teardown : function () {
+                moment.locale('en');
+                teardownDeprecationHandler(test, moment, 'locale');
+                if (lifecycle && lifecycle.teardown) {
+                    lifecycle.teardown();
+                }
+            }
+        });
+        defineCommonLocaleTests(name, -1, -1);
+    }
+
+    localeModule('zh-hk');
+
+    test('parse', function (assert) {
+        var tests = '一月 1月_二月 2月_三月 3月_四月 4月_五月 5月_六月 6月_七月 7月_八月 8月_九月 9月_十月 10月_十一月 11月_十二月 12月'.split('_'), i;
+        function equalTest(input, mmm, i) {
+            assert.equal(moment(input, mmm).month(), i, input + ' should be month ' + (i + 1));
+        }
+        for (i = 0; i < 12; i++) {
+            tests[i] = tests[i].split(' ');
+            equalTest(tests[i][0], 'MMM', i);
+            equalTest(tests[i][1], 'MMM', i);
+            equalTest(tests[i][0], 'MMMM', i);
+            equalTest(tests[i][1], 'MMMM', i);
+            equalTest(tests[i][0].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i][1].toLocaleLowerCase(), 'MMMM', i);
+            equalTest(tests[i][0].toLocaleUpperCase(), 'MMMM', i);
+            equalTest(tests[i][1].toLocaleUpperCase(), 'MMMM', i);
+        }
+    });
+
+    test('format', function (assert) {
+        var a = [
+                ['dddd, MMMM Do YYYY, a h:mm:ss',      '星期日, 二月 14日 2010, 下午 3:25:50'],
+                ['ddd, Ah',                            '週日, 下午3'],
+                ['M Mo MM MMMM MMM',                   '2 2月 02 二月 2月'],
+                ['YYYY YY',                            '2010 10'],
+                ['D Do DD',                            '14 14日 14'],
+                ['d do dddd ddd dd',                   '0 0日 星期日 週日 日'],
+                ['DDD DDDo DDDD',                      '45 45日 045'],
+                ['w wo ww',                            '8 8週 08'],
+                ['h hh',                               '3 03'],
+                ['H HH',                               '15 15'],
+                ['m mm',                               '25 25'],
+                ['s ss',                               '50 50'],
+                ['a A',                                '下午 下午'],
+                ['[這年的第] DDDo',                    '這年的第 45日'],
+                ['LTS',                                '下午3點25分50秒'],
+                ['L',                                  '2010年2月14日'],
+                ['LL',                                 '2010年2月14日'],
+                ['LLL',                                '2010年2月14日下午3點25分'],
+                ['LLLL',                               '2010年2月14日星期日下午3點25分'],
+                ['l',                                  '2010年2月14日'],
+                ['ll',                                 '2010年2月14日'],
+                ['lll',                                '2010年2月14日下午3點25分'],
+                ['llll',                               '2010年2月14日星期日下午3點25分']
+            ],
+            b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
+            i;
+
+        for (i = 0; i < a.length; i++) {
+            assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        }
+    });
+
+    test('format month', function (assert) {
+        var expected = '一月 1月_二月 2月_三月 3月_四月 4月_五月 5月_六月 6月_七月 7月_八月 8月_九月 9月_十月 10月_十一月 11月_十二月 12月'.split('_'), i;
+
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, i, 1]).format('MMMM MMM'), expected[i], expected[i]);
+        }
+    });
+
+    test('format week', function (assert) {
+        var expected = '星期日 週日 日_星期一 週一 一_星期二 週二 二_星期三 週三 三_星期四 週四 四_星期五 週五 五_星期六 週六 六'.split('_'), i;
+
+        for (i = 0; i < expected.length; i++) {
+            assert.equal(moment([2011, 0, 2 + i]).format('dddd ddd dd'), expected[i], expected[i]);
+        }
+    });
+
+    test('from', function (assert) {
+        var start = moment([2007, 1, 28]);
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 44}), true),  '幾秒',   '44 seconds = a few seconds');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 45}), true),  '1 分鐘', '45 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 89}), true),  '1 分鐘', '89 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 90}), true),  '2 分鐘',  '90 seconds = 2 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 44}), true),  '44 分鐘', '44 minutes = 44 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 45}), true),  '1 小時', '45 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 89}), true),  '1 小時', '89 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 90}), true),  '2 小時',  '90 minutes = 2 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 5}), true),   '5 小時',  '5 hours = 5 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 21}), true),  '21 小時', '21 hours = 21 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 22}), true),  '1 天',   '22 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 35}), true),  '1 天',   '35 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 36}), true),  '2 天',   '36 hours = 2 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 1}), true),   '1 天',   '1 day = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 5}), true),   '5 天',   '5 days = 5 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 25}), true),  '25 天',  '25 days = 25 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 26}), true),  '1 個月', '26 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 30}), true),  '1 個月', '30 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 43}), true),  '1 個月', '43 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 46}), true),  '2 個月',  '46 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 74}), true),  '2 個月',  '75 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 76}), true),  '3 個月',  '76 days = 3 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 1}), true),   '1 個月', '1 month = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 5}), true),   '5 個月',  '5 months = 5 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 345}), true), '1 年',   '345 days = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 548}), true), '2 年',   '548 days = 2 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),   '1 年',   '1 year = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),   '5 年',   '5 years = 5 years');
+    });
+
+    test('suffix', function (assert) {
+        assert.equal(moment(30000).from(0), '幾秒內',  'prefix');
+        assert.equal(moment(0).from(30000), '幾秒前', 'suffix');
+    });
+
+    test('now from now', function (assert) {
+        assert.equal(moment().fromNow(), '幾秒前',  'now from now should display as in the past');
+    });
+
+    test('fromNow', function (assert) {
+        assert.equal(moment().add({s: 30}).fromNow(), '幾秒內', 'in a few seconds');
+        assert.equal(moment().add({d: 5}).fromNow(), '5 天內', 'in 5 days');
+    });
+
+    test('calendar day', function (assert) {
+        var a = moment().hours(12).minutes(0).seconds(0);
+
+        assert.equal(moment(a).calendar(),                   '今天中午12點00分',     'today at the same time');
+        assert.equal(moment(a).add({m: 25}).calendar(),      '今天中午12點25分',     'Now plus 25 min');
+        assert.equal(moment(a).add({h: 1}).calendar(),       '今天下午1點00分',     'Now plus 1 hour');
+        assert.equal(moment(a).add({d: 1}).calendar(),       '明天中午12點00分',     'tomorrow at the same time');
+        assert.equal(moment(a).subtract({h: 1}).calendar(),  '今天上午11點00分',     'Now minus 1 hour');
+        assert.equal(moment(a).subtract({d: 1}).calendar(),  '昨天中午12點00分',     'yesterday at the same time');
+    });
+
+    test('calendar next week', function (assert) {
+        var i, m;
+        for (i = 2; i < 7; i++) {
+            m = moment().add({d: i});
+            assert.equal(m.calendar(),       m.format('[下]ddddLT'),  'Today + ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('[下]ddddLT'),  'Today + ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('[下]ddddLT'),  'Today + ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar last week', function (assert) {
+        var i, m;
+        for (i = 2; i < 7; i++) {
+            m = moment().subtract({d: i});
+            assert.equal(m.calendar(),       m.format('[上]ddddLT'),  'Today - ' + i + ' days current time');
+            m.hours(0).minutes(0).seconds(0).milliseconds(0);
+            assert.equal(m.calendar(),       m.format('[上]ddddLT'),  'Today - ' + i + ' days beginning of day');
+            m.hours(23).minutes(59).seconds(59).milliseconds(999);
+            assert.equal(m.calendar(),       m.format('[上]ddddLT'),  'Today - ' + i + ' days end of day');
+        }
+    });
+
+    test('calendar all else', function (assert) {
+        var weeksAgo = moment().subtract({w: 1}),
+            weeksFromNow = moment().add({w: 1});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),      '1 week ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 1 week');
+
+        weeksAgo = moment().subtract({w: 2});
+        weeksFromNow = moment().add({w: 2});
+
+        assert.equal(weeksAgo.calendar(),       weeksAgo.format('L'),      '2 weeks ago');
+        assert.equal(weeksFromNow.calendar(),   weeksFromNow.format('L'),  'in 2 weeks');
+    });
+
+    test('meridiem', function (assert) {
+        assert.equal(moment([2011, 2, 23,  0, 0]).format('a'), '凌晨', 'before dawn');
+        assert.equal(moment([2011, 2, 23,  6, 0]).format('a'), '早上', 'morning');
+        assert.equal(moment([2011, 2, 23,  9, 0]).format('a'), '上午', 'before noon');
+        assert.equal(moment([2011, 2, 23, 12, 0]).format('a'), '中午', 'noon');
+        assert.equal(moment([2011, 2, 23, 13, 0]).format('a'), '下午', 'after noon');
+        assert.equal(moment([2011, 2, 23, 18, 0]).format('a'), '晚上', 'night');
+
+        assert.equal(moment([2011, 2, 23,  0, 0]).format('A'), '凌晨', 'before dawn');
+        assert.equal(moment([2011, 2, 23,  6, 0]).format('A'), '早上', 'morning');
+        assert.equal(moment([2011, 2, 23,  9, 0]).format('A'), '上午', 'before noon');
+        assert.equal(moment([2011, 2, 23, 12, 0]).format('A'), '中午', 'noon');
+        assert.equal(moment([2011, 2, 23, 13, 0]).format('A'), '下午', 'afternoon');
+        assert.equal(moment([2011, 2, 23, 18, 0]).format('A'), '晚上', 'night');
+    });
+
+    test('weeks year starting sunday format', function (assert) {
+        assert.equal(moment([2012, 0,  1]).format('w ww wo'), '1 01 1週', 'Jan  1 2012 應該是第 1週');
+        assert.equal(moment([2012, 0,  7]).format('w ww wo'), '1 01 1週', 'Jan  7 2012 應該是第 1週');
+        assert.equal(moment([2012, 0,  8]).format('w ww wo'), '2 02 2週', 'Jan  8 2012 應該是第 2週');
+        assert.equal(moment([2012, 0, 14]).format('w ww wo'), '2 02 2週', 'Jan 14 2012 應該是第 2週');
+        assert.equal(moment([2012, 0, 15]).format('w ww wo'), '3 03 3週', 'Jan 15 2012 應該是第 3週');
+    });
+
+}));
+
+;(function (global, factory) {
+   typeof exports === 'object' && typeof module !== 'undefined'
+       && typeof require === 'function' ? factory(require('../../moment')) :
+   typeof define === 'function' && define.amd ? define(['../../moment'], factory) :
+   factory(global.moment)
+}(this, function (moment) { 'use strict';
+
+    function each(array, callback) {
+        var i;
+        for (i = 0; i < array.length; i++) {
+            callback(array[i], i, array);
+        }
+    }
+
+    function objectKeys(obj) {
+        if (Object.keys) {
+            return Object.keys(obj);
+        } else {
+            // IE8
+            var res = [], i;
+            for (i in obj) {
+                if (obj.hasOwnProperty(i)) {
+                    res.push(i);
+                }
+            }
+            return res;
+        }
+    }
+
+    // Pick the first defined of two or three arguments.
+    function defaults(a, b, c) {
+        if (a != null) {
+            return a;
+        }
+        if (b != null) {
+            return b;
+        }
+        return c;
+    }
+
+    function defineCommonLocaleTests(locale, options) {
+        test('lenient ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing ' + i + ' date check');
+            }
+        });
+
+        test('lenient ordinal parsing of number', function (assert) {
+            var i, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                testMoment = moment('2014 01 ' + i, 'YYYY MM Do');
+                assert.equal(testMoment.year(), 2014,
+                        'lenient ordinal parsing of number ' + i + ' year check');
+                assert.equal(testMoment.month(), 0,
+                        'lenient ordinal parsing of number ' + i + ' month check');
+                assert.equal(testMoment.date(), i,
+                        'lenient ordinal parsing of number ' + i + ' date check');
+            }
+        });
+
+        test('strict ordinal parsing', function (assert) {
+            var i, ordinalStr, testMoment;
+            for (i = 1; i <= 31; ++i) {
+                ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
+                testMoment = moment(ordinalStr, 'YYYY MM Do', true);
+                assert.ok(testMoment.isValid(), 'strict ordinal parsing ' + i);
+            }
+        });
+
+        test('meridiem invariant', function (assert) {
+            var h, m, t1, t2;
+            for (h = 0; h < 24; ++h) {
+                for (m = 0; m < 60; m += 15) {
+                    t1 = moment.utc([2000, 0, 1, h, m]);
+                    t2 = moment.utc(t1.format('A h:mm'), 'A h:mm');
+                    assert.equal(t2.format('HH:mm'), t1.format('HH:mm'),
+                            'meridiem at ' + t1.format('HH:mm'));
+                }
+            }
+        });
+
+        test('date format correctness', function (assert) {
+            var data, tokens;
+            data = moment.localeData()._longDateFormat;
+            tokens = objectKeys(data);
+            each(tokens, function (srchToken) {
+                // Check each format string to make sure it does not contain any
+                // tokens that need to be expanded.
+                each(tokens, function (baseToken) {
+                    // strip escaped sequences
+                    var format = data[baseToken].replace(/(\[[^\]]*\])/g, '');
+                    assert.equal(false, !!~format.indexOf(srchToken),
+                            'contains ' + srchToken + ' in ' + baseToken);
+                });
+            });
+        });
+
+        test('month parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr') {
+                // I can't fix it :(
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r;
+                r = moment(m.format(format), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format + ' lower strict');
+            }
+
+            for (i = 0; i < 12; ++i) {
+                m = moment([2015, i, 15, 18]);
+                tester('MMM');
+                tester('MMM.');
+                tester('MMMM');
+                tester('MMMM.');
+            }
+        });
+
+        test('weekday parsing correctness', function (assert) {
+            var i, m;
+
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
+                expect(0);
+                return;
+            }
+            function tester(format) {
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
+                r = moment(m.format(format), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg);
+                r = moment(m.format(format).toLocaleUpperCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper');
+                r = moment(m.format(format).toLocaleLowerCase(), format);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower');
+
+                r = moment(m.format(format), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' strict');
+                r = moment(m.format(format).toLocaleUpperCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper strict');
+                r = moment(m.format(format).toLocaleLowerCase(), format, true);
+                assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower strict');
+            }
+
+            for (i = 0; i < 7; ++i) {
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -50269,33 +52343,33 @@
     test('from', function (assert) {
         var start = moment([2007, 1, 28]);
         assert.equal(start.from(moment([2007, 1, 28]).add({s: 44}), true),  '幾秒',   '44 seconds = a few seconds');
-        assert.equal(start.from(moment([2007, 1, 28]).add({s: 45}), true),  '1分鐘', '45 seconds = a minute');
-        assert.equal(start.from(moment([2007, 1, 28]).add({s: 89}), true),  '1分鐘', '89 seconds = a minute');
-        assert.equal(start.from(moment([2007, 1, 28]).add({s: 90}), true),  '2分鐘',  '90 seconds = 2 minutes');
-        assert.equal(start.from(moment([2007, 1, 28]).add({m: 44}), true),  '44分鐘', '44 minutes = 44 minutes');
-        assert.equal(start.from(moment([2007, 1, 28]).add({m: 45}), true),  '1小時', '45 minutes = an hour');
-        assert.equal(start.from(moment([2007, 1, 28]).add({m: 89}), true),  '1小時', '89 minutes = an hour');
-        assert.equal(start.from(moment([2007, 1, 28]).add({m: 90}), true),  '2小時',  '90 minutes = 2 hours');
-        assert.equal(start.from(moment([2007, 1, 28]).add({h: 5}), true),   '5小時',  '5 hours = 5 hours');
-        assert.equal(start.from(moment([2007, 1, 28]).add({h: 21}), true),  '21小時', '21 hours = 21 hours');
-        assert.equal(start.from(moment([2007, 1, 28]).add({h: 22}), true),  '1天',   '22 hours = a day');
-        assert.equal(start.from(moment([2007, 1, 28]).add({h: 35}), true),  '1天',   '35 hours = a day');
-        assert.equal(start.from(moment([2007, 1, 28]).add({h: 36}), true),  '2天',   '36 hours = 2 days');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 1}), true),   '1天',   '1 day = a day');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 5}), true),   '5天',   '5 days = 5 days');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 25}), true),  '25天',  '25 days = 25 days');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 26}), true),  '1個月', '26 days = a month');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 30}), true),  '1個月', '30 days = a month');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 43}), true),  '1個月', '43 days = a month');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 46}), true),  '2個月',  '46 days = 2 months');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 74}), true),  '2個月',  '75 days = 2 months');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 76}), true),  '3個月',  '76 days = 3 months');
-        assert.equal(start.from(moment([2007, 1, 28]).add({M: 1}), true),   '1個月', '1 month = a month');
-        assert.equal(start.from(moment([2007, 1, 28]).add({M: 5}), true),   '5個月',  '5 months = 5 months');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 345}), true), '1年',   '345 days = a year');
-        assert.equal(start.from(moment([2007, 1, 28]).add({d: 548}), true), '2年',   '548 days = 2 years');
-        assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),   '1年',   '1 year = a year');
-        assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),   '5年',   '5 years = 5 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 45}), true),  '1 分鐘', '45 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 89}), true),  '1 分鐘', '89 seconds = a minute');
+        assert.equal(start.from(moment([2007, 1, 28]).add({s: 90}), true),  '2 分鐘',  '90 seconds = 2 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 44}), true),  '44 分鐘', '44 minutes = 44 minutes');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 45}), true),  '1 小時', '45 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 89}), true),  '1 小時', '89 minutes = an hour');
+        assert.equal(start.from(moment([2007, 1, 28]).add({m: 90}), true),  '2 小時',  '90 minutes = 2 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 5}), true),   '5 小時',  '5 hours = 5 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 21}), true),  '21 小時', '21 hours = 21 hours');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 22}), true),  '1 天',   '22 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 35}), true),  '1 天',   '35 hours = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({h: 36}), true),  '2 天',   '36 hours = 2 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 1}), true),   '1 天',   '1 day = a day');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 5}), true),   '5 天',   '5 days = 5 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 25}), true),  '25 天',  '25 days = 25 days');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 26}), true),  '1 個月', '26 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 30}), true),  '1 個月', '30 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 43}), true),  '1 個月', '43 days = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 46}), true),  '2 個月',  '46 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 74}), true),  '2 個月',  '75 days = 2 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 76}), true),  '3 個月',  '76 days = 3 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 1}), true),   '1 個月', '1 month = a month');
+        assert.equal(start.from(moment([2007, 1, 28]).add({M: 5}), true),   '5 個月',  '5 months = 5 months');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 345}), true), '1 年',   '345 days = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({d: 548}), true), '2 年',   '548 days = 2 years');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 1}), true),   '1 年',   '1 year = a year');
+        assert.equal(start.from(moment([2007, 1, 28]).add({y: 5}), true),   '5 年',   '5 years = 5 years');
     });
 
     test('suffix', function (assert) {
@@ -50309,7 +52383,7 @@
 
     test('fromNow', function (assert) {
         assert.equal(moment().add({s: 30}).fromNow(), '幾秒內', 'in a few seconds');
-        assert.equal(moment().add({d: 5}).fromNow(), '5天內', 'in 5 days');
+        assert.equal(moment().add({d: 5}).fromNow(), '5 天內', 'in 5 days');
     });
 
     test('calendar day', function (assert) {
@@ -50362,13 +52436,15 @@
     });
 
     test('meridiem', function (assert) {
-        assert.equal(moment([2011, 2, 23,  0, 0]).format('a'), '早上', 'morning');
+        assert.equal(moment([2011, 2, 23,  0, 0]).format('a'), '凌晨', 'before dawn');
+        assert.equal(moment([2011, 2, 23,  6, 0]).format('a'), '早上', 'morning');
         assert.equal(moment([2011, 2, 23,  9, 0]).format('a'), '上午', 'before noon');
         assert.equal(moment([2011, 2, 23, 12, 0]).format('a'), '中午', 'noon');
         assert.equal(moment([2011, 2, 23, 13, 0]).format('a'), '下午', 'after noon');
         assert.equal(moment([2011, 2, 23, 18, 0]).format('a'), '晚上', 'night');
 
-        assert.equal(moment([2011, 2, 23,  0, 0]).format('A'), '早上', 'morning');
+        assert.equal(moment([2011, 2, 23,  0, 0]).format('A'), '凌晨', 'before dawn');
+        assert.equal(moment([2011, 2, 23,  6, 0]).format('A'), '早上', 'morning');
         assert.equal(moment([2011, 2, 23,  9, 0]).format('A'), '上午', 'before noon');
         assert.equal(moment([2011, 2, 23, 12, 0]).format('A'), '中午', 'noon');
         assert.equal(moment([2011, 2, 23, 13, 0]).format('A'), '下午', 'afternoon');
@@ -50527,14 +52603,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -50551,7 +52628,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -50944,6 +53021,19 @@
         assert.equal(a.add('1', 'Q').month(), 1, 'Add quarter');
     });
 
+    test('add no string with milliseconds default', function (assert) {
+        var a = moment();
+        a.year(2011);
+        a.month(9);
+        a.date(12);
+        a.hours(6);
+        a.minutes(7);
+        a.seconds(8);
+        a.milliseconds(500);
+
+        assert.equal(a.add(50).milliseconds(), 550, 'Add milliseconds');
+    });
+
     test('subtract strings string short', function (assert) {
         var a = moment();
         a.year(2011);
@@ -51159,14 +53249,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -51183,7 +53274,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -51303,6 +53394,48 @@
                 return 'h:mmA';
             }
         }), '1:00PM', 'should equate');
+    });
+
+    test('extending calendar options', function (assert) {
+        var calendarFormat = moment.calendarFormat;
+
+        moment.calendarFormat = function (myMoment, now) {
+            var diff = myMoment.diff(now, 'days', true);
+            var nextMonth = now.clone().add(1, 'month');
+
+            var retVal =  diff < -6 ? 'sameElse' :
+                diff < -1 ? 'lastWeek' :
+                diff < 0 ? 'lastDay' :
+                diff < 1 ? 'sameDay' :
+                diff < 2 ? 'nextDay' :
+                diff < 7 ? 'nextWeek' :
+                (myMoment.month() === now.month() && myMoment.year() === now.year()) ? 'thisMonth' :
+                (nextMonth.month() === myMoment.month() && nextMonth.year() === myMoment.year()) ? 'nextMonth' : 'sameElse';
+            return retVal;
+        };
+
+        moment.updateLocale('en', {
+            calendar : {
+                    sameDay : '[Today at] LT',
+                    nextDay : '[Tomorrow at] LT',
+                    nextWeek : 'dddd [at] LT',
+                    lastDay : '[Yesterday at] LT',
+                    lastWeek : '[Last] dddd [at] LT',
+                    thisMonth : '[This month on the] Do',
+                    nextMonth : '[Next month on the] Do',
+                    sameElse : 'L'
+                }
+        });
+        var a = moment('2016-01-01').add(28, 'days');
+        var b = moment('2016-01-01').add(1, 'month');
+        try {
+            assert.equal(a.calendar('2016-01-01'), 'This month on the 29th', 'Ad hoc calendar format for this month');
+            assert.equal(b.calendar('2016-01-01'), 'Next month on the 1st', 'Ad hoc calendar format for next month');
+            assert.equal(a.locale('fr').calendar('2016-01-01'), a.locale('fr').format('L'), 'French falls back to default because thisMonth is not defined in that locale');
+        } finally {
+            moment.calendarFormat = calendarFormat;
+            moment.updateLocale('en', null);
+        }
     });
 
 }));
@@ -51449,14 +53582,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -51473,7 +53607,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -51653,6 +53787,7 @@
 
     test('date', function (assert) {
         assert.ok(moment(new Date()).toDate() instanceof Date, 'new Date()');
+        assert.equal(moment(new Date(2016,0,1), 'YYYY-MM-DD').format('YYYY-MM-DD'), '2016-01-01', 'If date is provided, format string is ignored');
     });
 
     test('date mutation', function (assert) {
@@ -51740,6 +53875,17 @@
         assert.ok(!moment(' ', 'MM').isValid());
         assert.ok(!moment(' ', 'DD').isValid());
         assert.ok(!moment(' ', ['MM', 'DD']).isValid());
+    });
+
+    test('undefined argument with formats', function (assert) {
+        assert.equal(moment(undefined, 'MM').format('YYYY-MM-DD HH:mm:ss'), 'Invalid date');
+        assert.equal(moment(undefined, 'DD').format('YYYY-MM-DD HH:mm:ss'), 'Invalid date');
+        assert.equal(moment(undefined, ['MM', 'DD']).format('YYYY-MM-DD HH:mm:ss'), 'Invalid date');
+
+        assert.ok(!moment(undefined, 'MM').isValid());
+        assert.ok(!moment(undefined, 'MM').isValid());
+        assert.ok(!moment(undefined, 'DD').isValid());
+        assert.ok(!moment(undefined, ['MM', 'DD']).isValid());
     });
 
     test('defaulting to current date', function (assert) {
@@ -52785,14 +54931,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -52809,7 +54956,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -53094,14 +55241,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -53118,7 +55266,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -53389,14 +55537,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -53413,7 +55562,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -53575,7 +55724,22 @@
                 hooks.deprecationHandler(null, msg);
             }
             if (firstTime) {
-                warn(msg + '\nArguments: ' + Array.prototype.slice.call(arguments).join(', ') + '\n' + (new Error()).stack);
+                var args = [];
+                var arg;
+                for (var i = 0; i < arguments.length; i++) {
+                    arg = '';
+                    if (typeof arguments[i] === 'object') {
+                        arg += '\n[' + i + '] ';
+                        for (var key in arguments[0]) {
+                            arg += key + ': ' + arguments[0][key] + ', ';
+                        }
+                        arg = arg.slice(0, -2); // Remove trailing comma and space
+                    } else {
+                        arg = arguments[i];
+                    }
+                    args.push(arg);
+                }
+                warn(msg + '\nArguments: ' + Array.prototype.slice.call(args).join('') + '\n' + (new Error()).stack);
                 firstTime = false;
             }
             return fn.apply(this, arguments);
@@ -53753,14 +55917,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -53777,7 +55942,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -54120,11 +56285,15 @@
 
     test('negative zero', function (assert) {
         function isNegative (n) {
-                return (1 / n) < 0;
-            }
+            return (1 / n) < 0;
+        }
         assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1]), 'months')), 'month diff on same date is zero, not -0');
         assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1]), 'years')), 'year diff on same date is zero, not -0');
         assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1]), 'quarters')), 'quarter diff on same date is zero, not -0');
+        assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1, 1]), 'days')), 'days diff on same date is zero, not -0');
+        assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1, 0, 1]), 'hours')), 'hour diff on same hour is zero, not -0');
+        assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1, 0, 0, 1]), 'minutes')), 'minute diff on same minute is zero, not -0');
+        assert.ok(!isNegative(moment([2012, 0, 1]).diff(moment([2012, 0, 1, 0, 0, 0, 1]), 'seconds')), 'second diff on same second is zero, not -0');
     });
 
 }));
@@ -54271,14 +56440,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -54295,7 +56465,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -54581,15 +56751,15 @@
         assert.equal(moment.duration('1.02:03:04.9999999').days(), 1, '1 day');
         assert.equal(moment.duration('1.02:03:04.9999999').hours(), 2, '2 hours');
         assert.equal(moment.duration('1.02:03:04.9999999').minutes(), 3, '3 minutes');
-        assert.equal(moment.duration('1.02:03:04.9999999').seconds(), 4, '4 seconds');
-        assert.equal(moment.duration('1.02:03:04.9999999').milliseconds(), 999, '999 milliseconds');
+        assert.equal(moment.duration('1.02:03:04.9999999').seconds(), 5, '5 seconds');
+        assert.equal(moment.duration('1.02:03:04.9999999').milliseconds(), 0, '0 milliseconds');
 
         assert.equal(moment.duration('1 02:03:04.9999999').years(), 0, '0 years');
         assert.equal(moment.duration('1 02:03:04.9999999').days(), 1, '1 day');
         assert.equal(moment.duration('1 02:03:04.9999999').hours(), 2, '2 hours');
         assert.equal(moment.duration('1 02:03:04.9999999').minutes(), 3, '3 minutes');
-        assert.equal(moment.duration('1 02:03:04.9999999').seconds(), 4, '4 seconds');
-        assert.equal(moment.duration('1 02:03:04.9999999').milliseconds(), 999, '999 milliseconds');
+        assert.equal(moment.duration('1 02:03:04.9999999').seconds(), 5, '5 seconds');
+        assert.equal(moment.duration('1 02:03:04.9999999').milliseconds(), 0, '0 milliseconds');
     });
 
     test('instatiation from serialized C# TimeSpan without days', function (assert) {
@@ -54597,14 +56767,17 @@
         assert.equal(moment.duration('01:02:03.9999999').days(), 0, '0 days');
         assert.equal(moment.duration('01:02:03.9999999').hours(), 1, '1 hour');
         assert.equal(moment.duration('01:02:03.9999999').minutes(), 2, '2 minutes');
-        assert.equal(moment.duration('01:02:03.9999999').seconds(), 3, '3 seconds');
-        assert.equal(moment.duration('01:02:03.9999999').milliseconds(), 999, '999 milliseconds');
+        assert.equal(moment.duration('01:02:03.9999999').seconds(), 4, '4 seconds');
+        assert.equal(moment.duration('01:02:03.9999999').milliseconds(), 0, '0 milliseconds');
 
-        assert.equal(moment.duration('23:59:59.9999999').days(), 0, '0 days');
-        assert.equal(moment.duration('23:59:59.9999999').hours(), 23, '23 hours');
+        assert.equal(moment.duration('23:59:59.9999999').days(), 1, '1 days');
+        assert.equal(moment.duration('23:59:59.9999999').hours(), 0, '0 hours');
+        assert.equal(moment.duration('23:59:59.9999999').minutes(), 0, '0 minutes');
+        assert.equal(moment.duration('23:59:59.9999999').seconds(), 0, '0 seconds');
+        assert.equal(moment.duration('23:59:59.9999999').milliseconds(), 0, '0 milliseconds');
 
-        assert.equal(moment.duration('500:59:59.9999999').days(), 20, '500 hours overflows to 20 days');
-        assert.equal(moment.duration('500:59:59.9999999').hours(), 20, '500 hours overflows to 20 hours');
+        assert.equal(moment.duration('500:59:59.8888888').days(), 20, '500 hours overflows to 20 days');
+        assert.equal(moment.duration('500:59:59.8888888').hours(), 20, '500 hours overflows to 20 hours');
     });
 
     test('instatiation from serialized C# TimeSpan without days or milliseconds', function (assert) {
@@ -54625,6 +56798,33 @@
         assert.equal(moment.duration('1.02:03:04').milliseconds(), 0, '0 milliseconds');
     });
 
+    test('instantiation from serialized C# TimeSpan with low millisecond precision', function (assert) {
+        assert.equal(moment.duration('00:00:15.72').years(), 0, '0 years');
+        assert.equal(moment.duration('00:00:15.72').days(), 0, '0 days');
+        assert.equal(moment.duration('00:00:15.72').hours(), 0, '0 hours');
+        assert.equal(moment.duration('00:00:15.72').minutes(), 0, '0 minutes');
+        assert.equal(moment.duration('00:00:15.72').seconds(), 15, '15 seconds');
+        assert.equal(moment.duration('00:00:15.72').milliseconds(), 720, '720 milliseconds');
+
+        assert.equal(moment.duration('00:00:15.7').milliseconds(), 700, '700 milliseconds');
+
+        assert.equal(moment.duration('00:00:15.').milliseconds(), 0, '0 milliseconds');
+    });
+
+    test('instantiation from serialized C# TimeSpan with high millisecond precision', function (assert) {
+        assert.equal(moment.duration('00:00:15.7200000').seconds(), 15, '15 seconds');
+        assert.equal(moment.duration('00:00:15.7200000').milliseconds(), 720, '720 milliseconds');
+
+        assert.equal(moment.duration('00:00:15.7209999').seconds(), 15, '15 seconds');
+        assert.equal(moment.duration('00:00:15.7209999').milliseconds(), 721, '721 milliseconds');
+
+        assert.equal(moment.duration('00:00:15.7205000').seconds(), 15, '15 seconds');
+        assert.equal(moment.duration('00:00:15.7205000').milliseconds(), 721, '721 milliseconds');
+
+        assert.equal(moment.duration('-00:00:15.7205000').seconds(), -15, '15 seconds');
+        assert.equal(moment.duration('-00:00:15.7205000').milliseconds(), -721, '721 milliseconds');
+    });
+
     test('instatiation from serialized C# TimeSpan maxValue', function (assert) {
         var d = moment.duration('10675199.02:48:05.4775807');
 
@@ -54635,7 +56835,7 @@
         assert.equal(d.hours(), 2, '2 hours');
         assert.equal(d.minutes(), 48, '48 minutes');
         assert.equal(d.seconds(), 5, '5 seconds');
-        assert.equal(d.milliseconds(), 477, '477 milliseconds');
+        assert.equal(d.milliseconds(), 478, '478 milliseconds');
     });
 
     test('instatiation from serialized C# TimeSpan minValue', function (assert) {
@@ -54648,7 +56848,7 @@
         assert.equal(d.hours(), -2, '2 hours');
         assert.equal(d.minutes(), -48, '48 minutes');
         assert.equal(d.seconds(), -5, '5 seconds');
-        assert.equal(d.milliseconds(), -477, '477 milliseconds');
+        assert.equal(d.milliseconds(), -478, '478 milliseconds');
     });
 
     test('instantiation from ISO 8601 duration', function (assert) {
@@ -55191,14 +57391,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -55215,7 +57416,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -55511,14 +57712,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -55535,7 +57737,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -56228,14 +58430,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -56252,7 +58455,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -56555,14 +58758,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -56579,7 +58783,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -56719,6 +58923,9 @@
         assert.equal(a.get('week'), a.week(), 'week');
         assert.equal(a.get('isoWeek'), a.isoWeek(), 'isoWeek');
         assert.equal(a.get('dayOfYear'), a.dayOfYear(), 'dayOfYear');
+
+        //getter no longer sets values when passed an object
+        assert.equal(moment([2016,0,1]).get({year:2015}).year(), 2016, 'getter no longer sets values when passed an object');
     });
 
     test('setters plural', function (assert) {
@@ -56889,6 +59096,10 @@
         assert.equal(a.minutes(), 7, 'minute');
         assert.equal(a.seconds(), 8, 'second');
         assert.equal(a.milliseconds(), 9, 'milliseconds');
+
+        var c = moment([2016,0,1]);
+        assert.equal(c.set({weekYear: 2016}).weekYear(), 2016, 'week year correctly sets with object syntax');
+        assert.equal(c.set({quarter: 3}).quarter(), 3, 'quarter sets correctly with object syntax');
     });
 
     test('day setter', function (assert) {
@@ -56918,6 +59129,21 @@
         assert.equal(moment(a).day(14).date(), 23, 'set from wednesday to second next sunday');
         assert.equal(moment(a).day(20).date(), 29, 'set from wednesday to second next saturday');
         assert.equal(moment(a).day(17).date(), 26, 'set from wednesday to second next wednesday');
+    });
+
+    test('object set ordering', function (assert) {
+        var a = moment([2016,3,30]);
+        assert.equal(a.set({date:31, month:4}).date(), 31, 'setter order automatically arranged by size');
+        var b = moment([2015,1,28]);
+        assert.equal(b.set({date:29, year: 2016}).format('YYYY-MM-DD'), '2016-02-29', 'year is prioritized over date');
+        //check a nonexistent time in US isn't set
+        var c = moment([2016,2,13]);
+        c.set({
+            hour:2,
+            minutes:30,
+            date: 14
+        });
+        assert.equal(c.format('YYYY-MM-DDTHH:mm'), '2016-03-14T02:30', 'setting hours, minutes date puts date first allowing time set to work');
     });
 
     test('string setters', function (assert) {
@@ -57149,14 +59375,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -57173,7 +59400,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -57452,14 +59679,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -57476,7 +59704,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -57621,7 +59849,7 @@
             invalid,
             valid = moment();
 
-        test.expectedDeprecations('moment().min', 'moment().max');
+        test.expectedDeprecations('moment().min', 'moment().max', 'isDSTShifted');
 
         for (i = 0; i < invalids.length; ++i) {
             invalid = invalids[i];
@@ -57908,14 +60136,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -57932,7 +60161,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -58360,14 +60589,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -58384,7 +60614,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -58657,14 +60887,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -58681,7 +60912,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -59109,14 +61340,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -59133,7 +61365,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -59741,14 +61973,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -59765,7 +61998,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -59891,9 +62124,11 @@
         assert.ok(!moment.isDate('2014-03-15'), 'string');
         assert.ok(!moment.isDate([2014, 2, 15]), 'array');
         assert.ok(!moment.isDate({year: 2014, month: 2, day: 15}), 'object');
-        assert.ok(!moment.isDate({toString: function () {
-            return '[object Date]';
-        }}), 'lying object');
+        assert.ok(!moment.isDate({
+            toString: function () {
+                return '[object Date]';
+            }
+        }), 'lying object');
     });
 
 }));
@@ -60040,14 +62275,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -60064,7 +62300,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -60358,14 +62594,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -60382,7 +62619,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -60784,14 +63021,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -60808,7 +63046,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -61241,14 +63479,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -61265,7 +63504,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -61698,14 +63937,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -61722,7 +63962,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -62250,14 +64490,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -62274,7 +64515,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -62536,14 +64777,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -62560,7 +64802,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -62767,6 +65009,29 @@
         assert.deepEqual(moment.monthsShort(2), 'three');
     });
 
+    test('with locale data', function (assert) {
+        var months = 'one_two_three_four_five_six_seven_eight_nine_ten_eleven_twelve'.split('_'),
+            monthsShort = 'on_tw_th_fo_fi_si_se_ei_ni_te_el_tw'.split('_'),
+            weekdays = 'one_two_three_four_five_six_seven'.split('_'),
+            weekdaysShort = 'on_tw_th_fo_fi_si_se'.split('_'),
+            weekdaysMin = '1_2_3_4_5_6_7'.split('_'),
+            weekdaysLocale = 'four_five_six_seven_one_two_three'.split('_'),
+            weekdaysShortLocale = 'fo_fi_si_se_on_tw_th'.split('_'),
+            weekdaysMinLocale = '4_5_6_7_1_2_3'.split('_'),
+            week = {
+                dow : 3,
+                doy : 6
+            };
+
+        var customLocale = moment.localeData('numerologists');
+
+        assert.deepEqual(customLocale.months(), months);
+        assert.deepEqual(customLocale.monthsShort(), monthsShort);
+        assert.deepEqual(customLocale.weekdays(), weekdays);
+        assert.deepEqual(customLocale.weekdaysShort(), weekdaysShort);
+        assert.deepEqual(customLocale.weekdaysMin(), weekdaysMin);
+    });
+
 }));
 
 ;(function (global, factory) {
@@ -62911,14 +65176,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -62935,7 +65201,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -63706,14 +65972,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -63730,7 +65997,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -63985,7 +66252,7 @@
         });
         moment.defineLocale('child-ordinal-parse-2', {
             parentLocale: 'base-ordinal-parse-2',
-            ordinalParse : null
+            ordinalParse : /\d{1,2}/
         });
 
         assert.ok(moment.utc('2015-01-1', 'YYYY-MM-Do', true).isValid(), 'ordinal parse uses child (default)');
@@ -64146,14 +66413,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -64170,7 +66438,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -64425,7 +66693,7 @@
             ordinalParse : /\d{1,2}x/
         });
         moment.updateLocale('ordinal-parse-2', {
-            ordinalParse : null
+            ordinalParse : /\d{1,2}/
         });
 
         assert.ok(moment.utc('2015-01-1', 'YYYY-MM-Do', true).isValid(), 'ordinal parse uses child (default)');
@@ -64587,14 +66855,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -64611,7 +66880,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -64910,14 +67179,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -64934,7 +67204,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -65211,14 +67481,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -65235,7 +67506,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -65517,14 +67788,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -65541,7 +67813,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -65696,12 +67968,38 @@
         };
 
         try {
-            assert.ok(moment().toISOString() === customTimeStr, 'moment() constructor should use the function defined by moment.now, but it did not');
-            assert.ok(moment.utc().toISOString() === customTimeStr, 'moment() constructor should use the function defined by moment.now, but it did not');
-            assert.ok(moment.utc([]).toISOString() === '2015-01-01T00:00:00.000Z', 'moment() constructor should fall back to the date defined by moment.now when an empty array is given, but it did not');
+            assert.equal(moment().toISOString(), customTimeStr, 'moment() constructor should use the function defined by moment.now, but it did not');
+            assert.equal(moment.utc().toISOString(), customTimeStr, 'moment() constructor should use the function defined by moment.now, but it did not');
         } finally {
             moment.now = oldFn;
         }
+    });
+
+    test('empty object, empty array', function (assert) {
+        function assertIsNow(gen, msg) {
+            var before = +(new Date()),
+                mid = gen(),
+                after = +(new Date());
+            assert.ok(before <= +mid && +mid <= after, 'should be now : ' + msg);
+        }
+        assertIsNow(function () {
+            return moment();
+        }, 'moment()');
+        assertIsNow(function () {
+            return moment([]);
+        }, 'moment([])');
+        assertIsNow(function () {
+            return moment({});
+        }, 'moment({})');
+        assertIsNow(function () {
+            return moment.utc();
+        }, 'moment.utc()');
+        assertIsNow(function () {
+            return moment.utc([]);
+        }, 'moment.utc([])');
+        assertIsNow(function () {
+            return moment.utc({});
+        }, 'moment.utc({})');
     });
 
 }));
@@ -65848,14 +68146,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -65872,7 +68171,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -66291,14 +68590,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -66315,7 +68615,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -66639,14 +68939,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -66663,7 +68964,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -67015,14 +69316,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -67039,7 +69341,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -67286,6 +69588,64 @@
         moment.relativeTimeThreshold('M', 11);
     });
 
+    test('custom rounding', function (assert) {
+        var roundingDefault = moment.relativeTimeRounding();
+
+        // Round relative time evaluation down
+        moment.relativeTimeRounding(Math.floor);
+
+        moment.relativeTimeThreshold('s', 60);
+        moment.relativeTimeThreshold('m', 60);
+        moment.relativeTimeThreshold('h', 24);
+        moment.relativeTimeThreshold('d', 31);
+        moment.relativeTimeThreshold('M', 12);
+
+        var a = moment();
+        a.subtract({minutes: 59, seconds: 59});
+        assert.equal(a.toNow(), 'in 59 minutes', 'Round down towards the nearest minute');
+
+        a = moment();
+        a.subtract({hours: 23, minutes: 59, seconds: 59});
+        assert.equal(a.toNow(), 'in 23 hours', 'Round down towards the nearest hour');
+
+        a = moment();
+        a.subtract({days: 30, hours: 23, minutes: 59});
+        assert.equal(a.toNow(), 'in 30 days', 'Round down towards the nearest day');
+
+        a = moment();
+        a.subtract({days: 364});
+        assert.equal(a.toNow(), 'in 11 months', 'Round down towards the nearest month');
+
+        a = moment();
+        a.subtract({years: 1, days: 364});
+        assert.equal(a.toNow(), 'in a year', 'Round down towards the nearest year');
+
+        // Do not round relative time evaluation
+        var retainValue = function (value) {
+            return value.toFixed(3);
+        };
+        moment.relativeTimeRounding(retainValue);
+
+        a = moment();
+        a.subtract({hours: 39});
+        assert.equal(a.toNow(), 'in 1.625 days', 'Round down towards the nearest year');
+
+        // Restore defaults
+        moment.relativeTimeThreshold('s', 45);
+        moment.relativeTimeThreshold('m', 45);
+        moment.relativeTimeThreshold('h', 22);
+        moment.relativeTimeThreshold('d', 26);
+        moment.relativeTimeThreshold('M', 11);
+        moment.relativeTimeRounding(roundingDefault);
+    });
+
+    test('retrive rounding settings', function (assert) {
+        moment.relativeTimeRounding(Math.round);
+        var roundingFunction = moment.relativeTimeRounding();
+
+        assert.equal(roundingFunction, Math.round, 'Can retrieve rounding setting');
+    });
+
     test('retrive threshold settings', function (assert) {
         moment.relativeTimeThreshold('m', 45);
         var minuteThreshold = moment.relativeTimeThreshold('m');
@@ -67437,14 +69797,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -67461,7 +69822,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -68107,14 +70468,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -68131,7 +70493,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -68398,14 +70760,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -68422,7 +70785,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -68549,6 +70912,37 @@
     test('toArray', function (assert) {
         var expected = [2014, 11, 26, 11, 46, 58, 17];
         assert.deepEqual(moment(expected).toArray(), expected, 'toArray invalid');
+    });
+
+    test('toDate returns a copy of the internal date', function (assert) {
+        var m = moment();
+        var d = m.toDate();
+        m.year(0);
+        assert.notEqual(d, m.toDate());
+    });
+
+    test('toJSON', function (assert) {
+        if (Date.prototype.toISOString) {
+            var expected = new Date().toISOString();
+            assert.deepEqual(moment(expected).toJSON(), expected, 'toJSON invalid');
+        } else {
+            // IE8
+            expect(0);
+        }
+    });
+
+    test('toJSON works when moment is frozen', function (assert) {
+        if (Date.prototype.toISOString) {
+            var expected = new Date().toISOString();
+            var m = moment(expected);
+            if (Object.freeze != null) {
+                Object.freeze(m);
+            }
+            assert.deepEqual(m.toJSON(), expected, 'toJSON when frozen invalid');
+        } else {
+            // IE8
+            expect(0);
+        }
     });
 
 }));
@@ -68695,14 +71089,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -68719,7 +71114,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -69048,14 +71443,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -69072,7 +71468,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -69801,14 +72197,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -69825,7 +72222,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -70384,14 +72781,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -70408,7 +72806,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -70567,6 +72965,25 @@
         assert.equal(moment(a).isoWeekday(8).date(),  17, 'set from sun to next mon');
         assert.equal(moment(a).isoWeekday(11).date(), 20, 'set from sun to next thu');
         assert.equal(moment(a).isoWeekday(14).date(), 23, 'set from sun to next sun');
+    });
+
+    test('iso weekday setter with day name', function (assert) {
+        moment.locale('en');
+
+        var a = moment([2011, 0, 10]);
+        assert.equal(moment(a).isoWeekday('Monday').date(),   10, 'set from mon to mon');
+        assert.equal(moment(a).isoWeekday('Thursday').date(), 13, 'set from mon to thu');
+        assert.equal(moment(a).isoWeekday('Sunday').date(),   16, 'set from mon to sun');
+
+        a = moment([2011, 0, 13]);
+        assert.equal(moment(a).isoWeekday('Monday').date(),   10, 'set from thu to mon');
+        assert.equal(moment(a).isoWeekday('Thursday').date(), 13, 'set from thu to thu');
+        assert.equal(moment(a).isoWeekday('Sunday').date(),   16, 'set from thu to sun');
+
+        a = moment([2011, 0, 16]);
+        assert.equal(moment(a).isoWeekday('Monday').date(),   10, 'set from sun to mon');
+        assert.equal(moment(a).isoWeekday('Thursday').date(), 13, 'set from sun to thu');
+        assert.equal(moment(a).isoWeekday('Sunday').date(),   16, 'set from sun to sun');
     });
 
     test('weekday first day of week Sunday (dow 0)', function (assert) {
@@ -70791,14 +73208,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -70815,7 +73233,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -71290,14 +73708,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -71314,7 +73733,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -71652,14 +74071,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -71676,7 +74096,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -72038,14 +74458,15 @@
         test('weekday parsing correctness', function (assert) {
             var i, m;
 
-            if (locale === 'tr' || locale === 'az') {
-                // There is a lower-case letter (ı), that converted to upper then
-                // lower changes to i
+            if (locale === 'tr' || locale === 'az' || locale === 'ro') {
+                // tr, az: There is a lower-case letter (ı), that converted to
+                // upper then lower changes to i
+                // ro: there is the letter ț which behaves weird under IE8
                 expect(0);
                 return;
             }
             function tester(format) {
-                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format;
+                var r, baseMsg = 'weekday ' + m.weekday() + ' fmt ' + format + ' ' + m.toISOString();
                 r = moment(m.format(format), format);
                 assert.equal(r.weekday(), m.weekday(), baseMsg);
                 r = moment(m.format(format).toLocaleUpperCase(), format);
@@ -72062,7 +74483,7 @@
             }
 
             for (i = 0; i < 7; ++i) {
-                m = moment.utc([2015, i, 15, 18]);
+                m = moment.utc([2015, 0, i + 1, 18]);
                 tester('dd');
                 tester('ddd');
                 tester('dddd');
@@ -72627,6 +75048,16 @@
         assert.equal(moment().zone(+60).format('ZZ'), '-0100', '+60 -> -0100');
         assert.equal(moment().zone(+90).format('ZZ'), '-0130', '+90 -> -0130');
         assert.equal(moment().zone(+120).format('ZZ'), '-0200', '+120 -> -0200');
+    });
+
+    test('parse zone without a timezone', function (assert) {
+        test.expectedDeprecations();
+        var m = moment.parseZone('2016-02-01T00:00:00');
+        assert.equal(
+            m.format('M D YYYY HH:mm:ss ZZ'),
+            '2 1 2016 00:00:00 +0000',
+            'Not providing a timezone should keep the time and change the zone to 0'
+        );
     });
 
 }));
