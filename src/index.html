@@ -36,6 +36,7 @@
         <li ng-class="{ active: urlLocation.path() == '/latest' }" ng-click="isActive('/latest')"><a href="#/latest">Latest</a></li>
         <li ng-class="{ active: urlLocation.path() == '/locations' }" ng-click="isActive('/locations')"><a href="#/locations">Locations</a></li>
         <li ng-class="{ active: urlLocation.path() == '/measurements' }"><a href="#/measurements">Measurements</a></li>
+        <li ng-class="{ active: urlLocation.path() == '/parameters' }"><a href="#/parameters">Parameters</a></li>
         <li ng-class="{ active: urlLocation.path() == '/sources' }"><a href="#/sources">Sources</a></li>
         <li ng-class="{ active: urlLocation.path() == '/graph' }"><a href="#/graph">Graph</a></li>
       </ul>
@@ -120,6 +121,7 @@
   <script src="/app/endpoints/measurements-form.directive.js"></script>
   <script src="/app/endpoints/measurements-table.directive.js"></script>
   <script src="/app/endpoints/panel-main.directive.js"></script>
+  <script src="/app/endpoints/parameters.js"></script>
   <script src="/app/endpoints/sources.js"></script>
 
   <script src="/app/graph/graph.module.js"></script>

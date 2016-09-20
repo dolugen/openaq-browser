@@ -31,6 +31,10 @@
                 templateUrl: 'app/endpoints/measurements.html',
                 controller: 'MeasurementsController'
             })
+            .when('/parameters', {
+                templateUrl: 'app/endpoints/parameters.html',
+                controller: 'ParametersController'
+            })
             .when('/sources', {
                 templateUrl: 'app/endpoints/sources.html',
                 controller: 'SourcesController'

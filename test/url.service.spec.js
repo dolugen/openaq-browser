@@ -34,6 +34,8 @@ describe("URLService", function() {
                 .toEqual("https://api.openaq.org/v1/locations");
             expect(URLService.getUrl("measurements"))
                 .toEqual("https://api.openaq.org/v1/measurements");
+            expect(URLService.getUrl("parameters"))
+                .toEqual("https://api.openaq.org/v1/parameters");
         });
     });
 });

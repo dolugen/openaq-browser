@@ -12,6 +12,7 @@
                 'latest',
                 'locations',
                 'measurements',
+                'parameters',
                 'sources'
             ]
         });
