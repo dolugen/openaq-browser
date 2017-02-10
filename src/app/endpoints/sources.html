@@ -23,8 +23,8 @@
       <th>active</th>
     </tr>
     <tr ng-repeat="result in results">
-      <td>{{ result.name }}
-      <td><a href="{{ result.url }}">url</a></td>
+      <td>{{ result.name }}</td>
+      <td><a ng-show="result.url" href="{{ result.url }}">URL</a></td>
       <td>{{ result.adapter }}</td>
       <td>{{ result.city }}</td>
       <td>{{ result.country }}</td>
