@@ -5,6 +5,7 @@
   <th>location</th>
   <th>parameters</th>
   <th>coordinates</th>
+  <th>distance</th>
   <th>count</th>
   <th>firstUpdated</th>
   <th>lastUpdated</th>
@@ -14,7 +15,8 @@
     <td>{{ result.city }}</td>
     <td>{{ result.location }}</td>
     <td><span ng-repeat="p in result.parameters">{{ p }}, </span></td>
-    <td>{{ result.coordinates.latitude }}, {{ result.coordinates.longitude }}</td>
+    <td>{{ result.coordinates.latitude }},{{ result.coordinates.longitude }}</td>
+    <td>{{ result.distance }}</td>
     <td>{{ result.count }}</td>
     <td>{{ result.firstUpdated | date }}</td>
     <td>{{ result.lastUpdated | date }}</td>
